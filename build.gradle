@@ -1,0 +1,64 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.5.7'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.leafy'
+version = '0.0.1-SNAPSHOT'
+description = '반려식물 키우기 앱'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	compileOnly 'org.projectlombok:lombok'
+	runtimeOnly 'org.postgresql:postgresql'
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+	// 👇 .env 파일을 읽어오는 gradle-dotenv 플러그인
+	implementation 'io.github.cdimascio:java-dotenv:5.1.1'
+
+	// 1. Swagger (SpringDoc) - API 문서 자동화
+    // 우리가 논의했던, 수동으로 추가해야 하는 의존성
+    implementation 'org.springdoc:springdoc-openapi-ui:1.6.15'
+
+    // 2. Spring Security - 인증/인가 (로그인)
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+	testImplementation 'org.springframework.security:spring-security-test'
+
+    // 3. Validation - 유효성 검사
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    // 4. AWS S3 - 이미지 저장소 (Spring Cloud AWS)
+    implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:3.1.1'
+
+    // 5. JWT (JSON Web Token) - 토큰 관리
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.5' // 또는 jjwt-gson
+
+    // 6. WebClient (Http Client) - 외부 API 호출
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
