@@ -1,3 +1,79 @@
+# 1. 서버 기본 설정
+server:
+  port: 8080
+
+# 2. Swagger (SpringDoc) 설정
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+  default-consumes-media-type: application/json;charset=UTF-8
+  default-produces-media-type: application/json;charset=UTF-8
+
+# 3. Spring Boot 전체 설정
 spring:
+  # (1) 방금 요청하신 애플리케이션 이름 설정
   application:
     name: leafy
+
+  # (2) 데이터베이스(PostgreSQL) & JPA 설정
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    # .env 파일에서 환경 변수를 읽어오도록 설정
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      # [중요] 개발 초기: 'update' 또는 'create'
+      ddl-auto: update
+    show-sql: true # JPA 실행 SQL 로그
+    properties:
+      hibernate:
+        format-sql: true # SQL 로그 예쁘게 정렬
+        default-batch-fetch-size: 100
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    open-in-view: false # OSIV 끄기 (권장)
+
+  # (3) Jackson (JSON) 설정
+  jackson:
+    serialization:
+      fail-on-empty-beans: false
+    property-naming-strategy: SNAKE_CASE # (선택적) JSON 응답 snake_case
+
+  # --- (4) ☁️ AWS S3 (지금 활성화하면 오류 발생!) ---
+  # (S3 Service/Config 구현 전까지 주석 처리)
+  # cloud:
+  #   aws:
+  #     credentials:
+  #       access-key: ${AWS_ACCESS_KEY}
+  #       secret-key: ${AWS_SECRET_KEY}
+  #     region:
+  #       static: ap-northeast-2
+  #     stack:
+  #       auto: false
+
+# --- 🔐 JWT (보안 설정 구현 시 사용) ---
+# (JWT 관련 Filter, Provider 구현 전까지 주석 처리)
+# jwt:
+#   secret-key: ${JWT_SECRET_KEY}
+#   access-token-expiration-ms: 3600000 # 1시간
+#   refresh-token-expiration-ms: 1209600000 # 2주
+
+# --- 🌐 외부 API (WebClient/DiagnosisService 구현 시 사용) ---
+# (커스텀 설정이므로 주석 처리해도 무방)
+# api:
+#   plant-id:
+#     base-url: https://api.plant.id/v3
+#     api-key: ${PLANT_ID_API_KEY}
+
+# --- ☁️ AWS S3 커스텀 설정 (S3 활성화 시 사용) ---
+# (커스텀 설정이므로 주석 처리해도 무방)
+# cloudfront:
+#   url: ${CLOUDFRONT_URL}
+# aws:
+#   s3:
+#     bucket-name: ${S3_BUCKET_NAME}
