@@ -50,13 +50,19 @@ public class User extends BaseTimeEntity {
 
     private LocalDateTime lastLoginAt;
 
+    // Role 필드 추가
+    @Enumerated(EnumType.STRING) // Enum 이름을 DB에 문자열로 저장
+    @Column(nullable = false, length = 20)
+    private Role role;
+
     // (빌더 패턴 등 필요한 메서드 추가)
     @Builder
-    public User(String email, String nickname, String oauthProvider, String oauthProviderId, String profilePhotoUrl) {
+    public User(String email, String nickname, String oauthProvider, String oauthProviderId, String profilePhotoUrl, Role role) {
         this.email = email;
         this.nickname = nickname;
         this.oauthProvider = oauthProvider;
         this.oauthProviderId = oauthProviderId;
         this.profilePhotoUrl = profilePhotoUrl;
+        this.role = role; // ✨ Role 추가
     }
 }

@@ -31,6 +31,13 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
         TokenInfo tokenInfo = jwtTokenProvider.generateToken(authentication);
-        response.sendRedirect("/login/oauth2/code/kakao/callback?token=" + tokenInfo.getAccessToken());
+
+        // ✨ 프론트엔드 URL로 직접 리다이렉트 (토큰을 Fragment로 전달하여 보안 강화)
+        // 실제 프론트엔드 URL로 변경해야 한다. 예: http://localhost:3000
+        //String redirectUrl = "http://localhost:8080/oauth/callback#accessToken=" + tokenInfo.getAccessToken();
+
+        //  프론트엔드 URL로 리다이렉트할 경우 (프론트엔드 서버 포트에 맞게 수정)
+        String redirectUrl = "http://localhost:5500/callback.html#accessToken=" + tokenInfo.getAccessToken();
+        response.sendRedirect(redirectUrl);
     }
 }
