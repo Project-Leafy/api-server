@@ -1,0 +1,42 @@
+# ==================================
+# 👩‍💻 'dev' 프로필 (개발용)
+# H2 인메모리 DB 설정
+# ==================================
+spring:
+  # (dev) H2 인메모리 DB 설정
+  datasource:
+    driver-class-name: org.h2.Driver
+    # H2를 PostgreSQL 모드로 실행 (문법 호환성)
+    url: jdbc:h2:mem:leafydb;MODE=PostgreSQL
+    username: sa
+    password:
+
+  # (dev) H2 콘솔 활성화 ( /h2-console )
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  # (dev) JPA 설정
+  jpa:
+    hibernate:
+      # [중요] 개발용: 서버 시작 시 DB 재생성
+      ddl-auto: create
+    show-sql: true # JPA 실행 SQL 로그
+    properties:
+      hibernate:
+        format-sql: true # SQL 로그 예쁘게 정렬
+        default-batch-fetch-size: 100
+    # H2 Dialect 사용
+    database-platform: org.hibernate.dialect.H2Dialect
+    open-in-view: false # OSIV 끄기 (권장)
+
+  cloud:
+    aws:
+      credentials:
+        access-key: ${AWS_ACCESS_KEY} # AWS S3 접근 키 (환경 변수에서 로드)
+        secret-key: ${AWS_SECRET_KEY} # AWS S3 비밀 키 (환경 변수에서 로드)
+      region:
+        static: ${AWS_REGION} # AWS S3 리전 (환경 변수에서 로드)
+      stack:
+        auto: false # AWS CloudFormation 스택 자동 감지 비활성화

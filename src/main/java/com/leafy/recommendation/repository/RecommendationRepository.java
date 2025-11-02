@@ -10,6 +10,6 @@ public interface RecommendationRepository extends JpaRepository<Recommendation, 
     // 1. 특정 사용자의 추천 프로필 조회 (User 객체 기준)
     Optional<Recommendation> findByUser(User user);
 
-    // 2. (대안) 사용자 ID 기준 조회
-    Optional<Recommendation> findByUserId(Long userId);
+    // 2. (대안) 사용자 ID 기준 조회 (User 엔티티의 userId 필드를 기준으로 조회)
+    Optional<Recommendation> findByUserUserId(Long userId);
 }
