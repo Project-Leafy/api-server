@@ -1,14 +1,13 @@
+// 경로: api-server/src/main/java/com/leafy/global/security/oauth/CustomOAuth2User.java
 package com.leafy.global.security.oauth;
 
 import com.leafy.user.domain.User;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
-// ✨ 1. import 추가
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
 import java.util.Collection;
-// ✨ 2. import 추가
 import java.util.Collections;
 import java.util.Map;
 
@@ -28,7 +27,6 @@ public class CustomOAuth2User implements OAuth2User {
         return attributes;
     }
 
-    // ✨ 3. [수정됨] null 대신 실제 권한(Role)을 반환
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         // user.getRole() (예: Role.ADMIN)을 "ROLE_ADMIN" 문자열로 변환
@@ -39,9 +37,13 @@ public class CustomOAuth2User implements OAuth2User {
 
     @Override
     public String getName() {
-        // (참고) Spring Security에서 'name'은 고유 식별자를 의미하기도 한다.
-        // user.getNickname() 보다는 user.getEmail()이나 user.getUserId().toString()이 더 적합할 수 있으나,
-        // 현재 닉네임으로 되어있어도 치명적인 오류는 아니다.
-        return user.getNickname();
+        // ⬅️ 수정: Principal의 값을 닉네임(user.getNickname()) 대신 이메일로 설정
+        // 이메일은 DB에서 사용자를 조회하는 PK/Unique Key의 역할을 하므로, JWT의 Subject로 적합합니다.
+        return user.getEmail(); // ⬅️ 수정 완료
+    }
+
+    // JWTTokenProvider에서 사용하기 위해 email Getter를 명시적으로 추가 (선택적)
+    public String getEmail() {
+        return user.getEmail();
     }
 }

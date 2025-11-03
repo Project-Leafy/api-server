@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.stream.Collectors;
+import com.leafy.global.security.oauth.CustomOAuth2User;
 
 @Slf4j
 @Component
@@ -32,6 +33,16 @@ public class JwtTokenProvider {
 
     // 유저 정보를 가지고 AccessToken, RefreshToken 을 생성하는 메서드
     public TokenInfo generateToken(Authentication authentication) {
+        // 1. Principal에서 이메일 추출
+        String email;
+        if (authentication.getPrincipal() instanceof CustomOAuth2User customUser) {
+            // 소셜 로그인(OAuth2)의 경우, CustomOAuth2User에서 이메일을 추출합니다.
+            email = customUser.getEmail();
+        } else {
+            // 일반 로그인이나 기타 인증 방식의 경우, 기본 getName()을 사용하거나 UserDetails에서 추출합니다.
+            email = authentication.getName();
+        }
+
         // 권한 가져오기
         String authorities = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
@@ -41,7 +52,7 @@ public class JwtTokenProvider {
         // Access Token 생성
         Date accessTokenExpiresIn = new Date(now + 86400000);
         String accessToken = Jwts.builder()
-                .setSubject(authentication.getName())
+                .setSubject(email)
                 .claim("auth", authorities)
                 .setExpiration(accessTokenExpiresIn)
                 .signWith(key, SignatureAlgorithm.HS256)
@@ -80,9 +91,11 @@ public class JwtTokenProvider {
     }
 
     // 토큰 정보를 검증하는 메서드
+    // JwtAuthenticationFilter에서 호출됩니다.
     public boolean validateToken(String token) {
         try {
-            Jwts.parser().verifyWith(key).build().parseSignedClaims(token);
+            // ⬅️ 수정: Jwts.parser()에 key를 설정하여 복호화를 시도합니다.
+            Jwts.parser().setSigningKey(this.key).build().parseClaimsJws(token);
             return true;
         } catch (io.jsonwebtoken.security.SecurityException | MalformedJwtException e) {
             log.info("Invalid JWT Token", e);
@@ -98,7 +111,8 @@ public class JwtTokenProvider {
 
     private Claims parseClaims(String accessToken) {
         try {
-            return Jwts.parser().verifyWith(key).build().parseSignedClaims(accessToken).getPayload();
+            // ⬅️ 수정: Jwts.parser()에 key를 설정하여 파싱합니다.
+            return Jwts.parser().setSigningKey(this.key).build().parseClaimsJws(accessToken).getBody();
         } catch (ExpiredJwtException e) {
             return e.getClaims();
         }

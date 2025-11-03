@@ -83,15 +83,17 @@ spring:
             user-name-attribute: id # 사용자 정보에서 사용자 이름을 식별할 속성 (카카오의 경우 'id')
 # --- 🌐 외부 API (WebClient/DiagnosisService 구현 시 사용) ---
 # (커스텀 설정이므로 주석 처리해도 무방)
-# api:
-#   plant-id:
-#     base-url: https://api.plant.id/v3
-#     api-key: ${PLANT_ID_API_KEY}
+# Plant.id API 설정
+plant:
+  id:
+    # .env 파일 또는 환경 변수의 PLANT_ID_API_KEY 값을 가져옴
+    api-key: ${PLANT_ID_API_KEY}
+    base-url: https://plant.id/api/v3
 
-# --- ☁️ AWS S3 커스텀 설정 (S3 활성화 시 사용) ---
-# (커스텀 설정이므로 주석 처리해도 무방)
-# cloudfront:
-#   url: ${CLOUDFRONT_URL}
-# aws:
-#   s3:
-#     bucket-name: ${S3_BUCKET_NAME}
+# --- ☁️ AWS S3/CloudFront 커스텀 설정 (신규 추가) ---
+cloudfront:
+  url: ${CLOUDFRONT_URL}
+
+aws:
+  s3:
+    bucket-name: ${S3_BUCKET_NAME}

@@ -32,8 +32,15 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
         TokenInfo tokenInfo = jwtTokenProvider.generateToken(authentication);
 
+        // 2. 🌟 터미널에 토큰 정보 출력 🌟
+        System.out.println("=========================================================");
+        System.out.println("✅ JWT TOKEN ISSUED SUCCESSFULLY (for debugging):");
+        System.out.println("Access Token: " + tokenInfo.getAccessToken()); // ⬅️ Lombok/일반 Getter 호출로 수정
+        System.out.println("Refresh Token: " + tokenInfo.getRefreshToken()); // ⬅️ Lombok/일반 Getter 호출로 수정
+        System.out.println("=========================================================");
+
+
         // ✨ 프론트엔드 URL로 직접 리다이렉트 (토큰을 Fragment로 전달하여 보안 강화)
-        // 실제 프론트엔드 URL로 변경해야 한다. 예: http://localhost:3000
         //String redirectUrl = "http://localhost:8080/oauth/callback#accessToken=" + tokenInfo.getAccessToken();
 
         //  프론트엔드 URL로 리다이렉트할 경우 (프론트엔드 서버 포트에 맞게 수정)

@@ -6,8 +6,12 @@ import com.leafy.global.common.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.Builder; // ⬅️ 추가
 import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor; // ⬅️ 추가
 
+@AllArgsConstructor(access = AccessLevel.PRIVATE) // ⬅️ 추가
+@Builder // ⬅️ 추가
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
