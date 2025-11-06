@@ -11,6 +11,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
+
 @Getter
 public class CustomOAuth2User implements OAuth2User {
 
