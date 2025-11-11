@@ -8,11 +8,14 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
+import lombok.Builder; // ⬅️ 이 부분을 추가해야 합니다.
+import lombok.AllArgsConstructor; // ⬅️ 이 부분도 함께 추가합니다.
 import java.math.BigDecimal; // 1. decimal(5, 4) 타입을 위해 BigDecimal 사용
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+@AllArgsConstructor(access = AccessLevel.PRIVATE) // ⬅️ 추가: 모든 필드를 인자로 받는 생성자 생성
+@Builder // ⬅️ 추가: Builder 패턴 자동 생성
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity

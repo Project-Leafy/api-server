@@ -38,10 +38,12 @@ dependencies {
 
 	// 1. Swagger (SpringDoc) - API 문서 자동화
     // 우리가 논의했던, 수동으로 추가해야 하는 의존성
-    implementation 'org.springdoc:springdoc-openapi-ui:1.6.15' 
+    //implementation 'org.springdoc:springdoc-openapi-ui:1.6.15' - 호환되지 않는 옛날 라이브러리여서 밑의 의존성으로 바꿈.
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
 
     // 2. Spring Security - 인증/인가 (로그인)
     implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 	testImplementation 'org.springframework.security:spring-security-test'
 
     // 3. Validation - 유효성 검사
@@ -52,14 +54,24 @@ dependencies {
 
     // 5. JWT (JSON Web Token) - 토큰 관리
     implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
-    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.5'
-    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.5' // 또는 jjwt-gson
+    //runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.5'
+    //runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.5' // 또는 jjwt-gson
+	// --- ⬇️ JWT 의존성 수정 ⬇️ ---
+	// 'runtimeOnly'를 'implementation'으로 변경
+	implementation 'io.jsonwebtoken:jjwt-impl:0.12.5'
+	implementation 'io.jsonwebtoken:jjwt-jackson:0.12.5' // JSON 파싱용 (권장)
+	// --- ⬆️ implementation의 의미: "이 라이브러리는 컴파일할 때도 필요하고, 실행할 때도 필요하다." ⬆️ ---
 
     // 6. WebClient (Http Client) - 외부 API 호출
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
 
 	// PostgreSQL의 JSONB 타입을 Java 엔티티와 쉽게 매핑해주는 라이브러리입니다.
 	implementation 'io.hypersistence:hypersistence-utils-hibernate-60:3.5.2'
+
+
+	//개발용 의존성
+	developmentOnly 'com.h2database:h2'
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 }
 
 tasks.named('test') {

@@ -17,16 +17,22 @@ import java.time.LocalDateTime;
 @Table(name = "users") // 1. ERD의 'users' 테이블과 매핑
 public class User extends BaseTimeEntity {
 
-    @Id // 2. PK(기본 키)임을 명시
+    @Id // 2. PK(기본 키)임을 명시 -> user_id 가 PK임! Id가 아니라! 이거 주의
     @GeneratedValue(strategy = GenerationType.IDENTITY) // 3. 'bigserial' (auto-increment) 전략 사용
     @Column(name = "user_id")
     private Long userId;
 
-    @Column(name = "kakao_id", unique = true, nullable = false, length = 255)
-    private String kakaoId;
+    @Column(unique = true, nullable = false, length = 255)
+    private String email; // 사용자의 이메일 주소이며, 로그인 시 사용됩니다.
 
     @Column(nullable = false, length = 100)
     private String nickname;
+
+    @Column(length = 255)
+    private String oauthProvider; // 소셜 로그인 제공자 (e.g., kakao)
+
+    @Column(length = 255)
+    private String oauthProviderId; // 소셜 로그인 제공자의 사용자 ID
 
     @Column(name = "profile_photo_url", length = 2048)
     private String profilePhotoUrl;
@@ -44,11 +50,19 @@ public class User extends BaseTimeEntity {
 
     private LocalDateTime lastLoginAt;
 
+    // Role 필드 추가
+    @Enumerated(EnumType.STRING) // Enum 이름을 DB에 문자열로 저장
+    @Column(nullable = false, length = 20)
+    private Role role;
+
     // (빌더 패턴 등 필요한 메서드 추가)
     @Builder
-    public User(String kakaoId, String nickname, String profilePhotoUrl) {
-        this.kakaoId = kakaoId;
+    public User(String email, String nickname, String oauthProvider, String oauthProviderId, String profilePhotoUrl, Role role) {
+        this.email = email;
         this.nickname = nickname;
+        this.oauthProvider = oauthProvider;
+        this.oauthProviderId = oauthProviderId;
         this.profilePhotoUrl = profilePhotoUrl;
+        this.role = role; // ✨ Role 추가
     }
 }

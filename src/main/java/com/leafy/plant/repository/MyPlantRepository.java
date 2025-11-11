@@ -15,4 +15,7 @@ public interface MyPlantRepository extends JpaRepository<MyPlant, Long> {
 
     // 3. 특정 사용자가 소유한 식물의 총 개수 (users 테이블의 집계 데이터 업데이트 시)
     long countByUser(User user);
+
+    // User 객체를 기준으로 모든 MyPlant를 찾아서 생성일(createdAt) 기준 내림차순으로 정렬
+    List<MyPlant> findAllByUserOrderByCreatedAtDesc(User user);
 }

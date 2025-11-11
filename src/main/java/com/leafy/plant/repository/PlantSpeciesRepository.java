@@ -1,8 +1,11 @@
 package com.leafy.plant.repository;
 
+import com.leafy.plant.domain.MyPlant;
 import com.leafy.plant.domain.PlantSpecies;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
+import com.leafy.user.domain.User;
+import java.util.List;
 
 public interface PlantSpeciesRepository extends JpaRepository<PlantSpecies, Long> {
 
@@ -11,4 +14,6 @@ public interface PlantSpeciesRepository extends JpaRepository<PlantSpecies, Long
 
     // 2. (선택적) 한글 이름으로 검색할 때
     Optional<PlantSpecies> findByKoreanName(String koreanName);
+
 }
+

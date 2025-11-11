@@ -1,0 +1,64 @@
+# 경로: api-server/src/main/resources/application-dev.yaml
+
+# ==================================
+# 👩‍💻 'dev' 프로필 (개발용)
+# ==================================
+spring:
+  # (dev) H2 인메모리 DB 설정 (기존 내용)
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:leafydb;MODE=PostgreSQL
+    username: sa
+    password:
+
+  # (dev) H2 콘솔 활성화 (기존 내용)
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  # (dev) JPA 설정 (기존 내용)
+  jpa:
+    defer-datasource-initialization: true                                                                                                                │
+
+    hibernate:
+      ddl-auto: create
+    show-sql: true
+    properties:
+      hibernate:
+        format-sql: true
+    database-platform: org.hibernate.dialect.H2Dialect
+    open-in-view: false
+
+    # --- ⬇️ SQL 초기화 설정 (테이블 존재 오류 해결) ⬇️ ---
+    sql:
+      init:
+        mode: always
+        # 이 부분이 핵심: JPA가 테이블을 다 만든 후 data.sql을 실행하도록 지연시킴
+        # 이 설정이 없으면 data.sql이 DDL(테이블 생성) 전에 실행될 수 있음.
+        platform: h2
+
+  # (dev) AWS S3 설정 (기존 내용)
+  cloud:
+    aws:
+      credentials:
+        access-key: ${AWS_ACCESS_KEY}
+        secret-key: ${AWS_SECRET_KEY}
+      region:
+        static: ${AWS_REGION}
+      stack:
+        auto: false
+
+# --- 🌐 외부 API (plant.id) 설정 (신규 추가) ---
+plant:
+  id:
+    api-key: ${PLANT_ID_API_KEY}
+    base-url: https://plant.id/api/v3
+
+# --- ☁️ AWS S3/CloudFront 커스텀 설정 (신규 추가) ---
+cloudfront:
+  url: ${CLOUDFRONT_URL}
+
+aws:
+  s3:
+    bucket-name: ${S3_BUCKET_NAME}
