@@ -40,7 +40,9 @@ public class Recommendation extends BaseTimeEntity {
     @Column(name = "survey_experience_data", columnDefinition = "jsonb")
     private Map<String, Object> surveyExperienceData;
 
-    // ... (survey_preference_data) ...
+    @Type(JsonType.class)
+    @Column(name = "survey_preference_data", columnDefinition = "jsonb")
+    private Map<String, Object> surveyPreferenceData;
 
     @Column(name = "analyzed_light_level_code", length = 50)
     private String analyzedLightLevelCode;
@@ -53,7 +55,9 @@ public class Recommendation extends BaseTimeEntity {
     @Column(name = "analyzed_success_traits", columnDefinition = "jsonb")
     private List<String> analyzedSuccessTraits;
 
-    // ... (analyzed_failure_traits) ...
+    @Type(JsonType.class)
+    @Column(name = "analyzed_failure_traits", columnDefinition = "jsonb")
+    private List<String> analyzedFailureTraits;
 
     private LocalDateTime lastAnalyzedAt;
 
