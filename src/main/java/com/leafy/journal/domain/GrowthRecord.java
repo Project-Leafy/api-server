@@ -6,6 +6,7 @@ import com.leafy.global.common.BaseTimeEntity;
 import com.leafy.plant.domain.MyPlant; // 1. MyPlant 엔티티 import
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -42,11 +43,43 @@ public class GrowthRecord extends BaseTimeEntity {
     @Column(nullable = false)
     private Boolean watered = false;
 
-    // ... (fertilized, pruned, repotted 등 나머지 boolean 필드) ...
+    @Column(nullable = false)
+    private Boolean fertilized = false;
+
+    @Column(nullable = false)
+    private Boolean pruned = false;
+
+    @Column(nullable = false)
+    private Boolean repotted = false;
 
     @Column(name = "water_amount_type", length = 50)
     private String waterAmountType;
 
     @Column(name = "fertilizer_type", length = 50)
     private String fertilizerType;
+
+    @Builder
+    public GrowthRecord(MyPlant myPlant, LocalDate recordDate, String photoUrl, String memo, Boolean watered, Boolean fertilized, Boolean pruned, Boolean repotted, String waterAmountType, String fertilizerType) {
+        this.myPlant = myPlant;
+        this.recordDate = recordDate;
+        this.photoUrl = photoUrl;
+        this.memo = memo;
+        this.watered = watered;
+        this.fertilized = fertilized;
+        this.pruned = pruned;
+        this.repotted = repotted;
+        this.waterAmountType = waterAmountType;
+        this.fertilizerType = fertilizerType;
+    }
+
+    public void update(LocalDate recordDate, String memo, Boolean watered, Boolean fertilized, Boolean pruned, Boolean repotted, String waterAmountType, String fertilizerType) {
+        if (recordDate != null) this.recordDate = recordDate;
+        if (memo != null) this.memo = memo;
+        if (watered != null) this.watered = watered;
+        if (fertilized != null) this.fertilized = fertilized;
+        if (pruned != null) this.pruned = pruned;
+        if (repotted != null) this.repotted = repotted;
+        if (waterAmountType != null) this.waterAmountType = waterAmountType;
+        if (fertilizerType != null) this.fertilizerType = fertilizerType;
+    }
 }
