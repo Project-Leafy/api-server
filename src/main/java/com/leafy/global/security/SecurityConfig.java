@@ -62,6 +62,8 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/api-docs/**",
+                                "/h2-console/**", //개발용 메모리
+                                "http://localhost:8080", //Swagger UI 테스트를 위해 로컬 서버 허용
                                 "/home" // ✨ SuccessHandler가 리다이렉트하는 최종 경로
                                 // [수정됨] /oauth/callback 제거 (더 이상 백엔드가 호출받지 않음)
                         ).permitAll()
