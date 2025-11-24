@@ -14,6 +14,13 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.leafy.plant.dto.CreateMyPlantRequest;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.http.HttpStatus;
+import io.swagger.v3.oas.annotations.Operation;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.List;
 
@@ -25,6 +32,12 @@ public class MyPlantController {
 
     private final MyPlantService myPlantService;
     private final UserRepository userRepository; // User 정보를 가져오기 위해 필요
+
+    private User getAuthenticatedUser(UserDetails userDetails) {
+        String email = userDetails.getUsername();
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("User not found: " + email));
+    }
 
     @Operation(summary = "내 식물 목록 조회", description = "내가 등록한 모든 반려식물의 리스트를 최신순으로 조회")
     @GetMapping
@@ -39,5 +52,15 @@ public class MyPlantController {
 
         List<MyPlantResponseDto> myPlants = myPlantService.findMyPlants(user);
         return ResponseEntity.ok(myPlants);
+    }
+    @Operation(summary = "반려식물 등록", description = "식별된 식물 정보와 닉네임을 입력받아 내 반려식물로 저장합니다.")
+    @PostMapping
+    public ResponseEntity<MyPlantResponseDto> registerMyPlant(
+            @RequestBody CreateMyPlantRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        User user = getAuthenticatedUser(userDetails);
+        MyPlantResponseDto response = myPlantService.join(user, request);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 }

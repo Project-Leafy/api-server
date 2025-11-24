@@ -5,14 +5,14 @@ package com.leafy.plant.domain;
 import com.leafy.global.common.BaseTimeEntity;
 import com.leafy.user.domain.User; // 1. 다른 도메인의 User 엔티티 import
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDate;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@Builder
 @Entity
 @Table(name = "my_plant")
 public class MyPlant extends BaseTimeEntity {
@@ -43,6 +43,7 @@ public class MyPlant extends BaseTimeEntity {
 
     private LocalDate lastWateredDate;
 
+    @Builder.Default
     @Column(name = "status_code", nullable = false, length = 50)
     private String statusCode = "HEALTHY"; // (Tip: Enum 관리 추천)
 }
