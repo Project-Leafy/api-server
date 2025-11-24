@@ -56,4 +56,20 @@ public class MyPlantService {
         // 5. 응답 DTO 반환
         return MyPlantResponseDto.from(savedPlant);
     }
+
+    /**
+     * 식물 삭제 (소유자 확인 포함)
+     */
+    @Transactional
+    public void delete(Long plantId, User user) {
+        MyPlant myPlant = myPlantRepository.findById(plantId)
+                .orElseThrow(() -> new EntityNotFoundException("Plant not found with id: " + plantId));
+
+        // 내 식물이 맞는지 확인
+        if (!myPlant.getUser().getUserId().equals(user.getUserId())) {
+            throw new IllegalArgumentException("User does not own this plant.");
+        }
+
+        myPlantRepository.delete(myPlant);
+    }
 }

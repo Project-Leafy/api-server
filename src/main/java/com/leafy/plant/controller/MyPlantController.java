@@ -15,10 +15,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.leafy.plant.dto.CreateMyPlantRequest;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpStatus;
-import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -62,5 +60,16 @@ public class MyPlantController {
         User user = getAuthenticatedUser(userDetails);
         MyPlantResponseDto response = myPlantService.join(user, request);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
+    @Operation(summary = "반려식물 삭제", description = "등록된 반려식물을 삭제합니다. (관련된 성장일지도 함께 삭제될 수 있습니다.)")
+    @DeleteMapping("/{plantId}")
+    public ResponseEntity<Void> deleteMyPlant(
+            @PathVariable Long plantId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        User user = getAuthenticatedUser(userDetails);
+        myPlantService.delete(plantId, user);
+        return ResponseEntity.noContent().build();
     }
 }
