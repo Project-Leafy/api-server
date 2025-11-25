@@ -2,9 +2,9 @@ package com.leafy.plant.service;
 
 import com.leafy.diagnosis.dto.PlantIdRequestDto;
 import com.leafy.diagnosis.dto.PlantIdResponseDto;
-// ... (나머지 import 유지) ...
 import com.leafy.global.storage.S3UploadService;
-import com.leafy.plant.domain.MyPlant;
+import com.leafy.global.type.LightLevel;
+import com.leafy.global.type.WaterFrequency;
 import com.leafy.plant.domain.PlantSpecies;
 import com.leafy.plant.dto.PlantIdentificationResponseDto;
 import com.leafy.plant.repository.MyPlantRepository;
@@ -13,7 +13,8 @@ import com.leafy.user.domain.User;
 import com.leafy.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value; // import 추가
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,91 +22,88 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.IOException;
+import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class PlantIdentificationService {
 
-    @Value("${PLANT_ID_API_KEY}") // .env 파일의 값을 주입
-    private String plantIdApiKey; // ⭐️ 필드 추가
+    @Value("${PLANT_ID_API_KEY}")
+    private String plantIdApiKey;
     private final WebClient plantIdWebClient;
     private final S3UploadService s3UploadService;
     private final PlantSpeciesRepository plantSpeciesRepository;
     private final MyPlantRepository myPlantRepository;
     private final UserRepository userRepository;
 
-    /**
-     * 새로운 식물 이미지를 식별하고, PlantSpecies를 등록/조회하며 MyPlant 등록을 위한 DTO를 반환합니다.
-     */
     public PlantIdentificationResponseDto identifyAndPrepareRegistration(
             MultipartFile imageFile, Double lat, Double lon) throws IOException {
 
-        // 1. 사용자 조회 (인증된 사용자만 접근 가능)
+        // 1. 사용자 확인
         String principalName = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userRepository.findByEmail(principalName)
+                .orElseThrow(() -> new EntityNotFoundException("Authenticated User not found"));
 
-        // ⬅️ 수정: Principal의 값을 이메일로 간주하고 findByEmail을 사용합니다.
-        // 이 로직이 성공하려면, JWT 토큰 생성 시 Principal에 반드시 'email'이 담겨야 합니다.
-        User currentUser = userRepository.findByEmail(principalName) // ⬅️ findByNickname 대신 findByEmail 사용
-                .orElseThrow(() -> new EntityNotFoundException("Authenticated User not found: " + principalName));
+        // 2. S3 업로드 (DB 저장용)
+        String s3ImageUrl = s3UploadService.upload(imageFile, "identification");
+        log.info("Image uploaded to S3: {}", s3ImageUrl);
 
-        // 2. S3에 이미지 업로드 및 URL 획득
-        String imageUrl = s3UploadService.upload(imageFile, "identification");
+        // 3. [수정됨] Plant.id 전송용 Base64 변환 (Data URI Scheme 적용!)
+        // 예: "data:image/jpeg;base64,/9j/4AAQSkZJRg..." 형식으로 만들어야 API가 인식함
+        String base64Data = Base64.getEncoder().encodeToString(imageFile.getBytes());
+        String base64Image = "data:" + imageFile.getContentType() + ";base64," + base64Data;
 
-        // 3. plant.id API 호출 (식별 요청)
-        PlantIdResponseDto response = requestPlantIdentification(imageUrl, lat, lon);
+        // 4. 식별 요청
+        PlantIdResponseDto response = requestPlantIdentification(base64Image, lat, lon);
 
-        // 4. 식별 결과 추출
+        // 5. 결과 처리
+        if (response.result() == null || response.result().classification() == null) {
+            // API가 결과를 주지 않았을 때의 로그
+            log.error("Plant ID API Error: Status={}, Input={}", response.status(), response.input());
+            throw new RuntimeException("Plant identification API returned no results.");
+        }
+
         PlantIdResponseDto.Suggestion topSuggestion = response.result().classification().suggestions().stream()
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("Plant identification failed. No suggestions found."));
+                .orElseThrow(() -> new RuntimeException("No plant suggestions found."));
 
         String scientificName = topSuggestion.name();
-        String commonName = topSuggestion.details().commonNames() != null && !topSuggestion.details().commonNames().isEmpty() ?
-                topSuggestion.details().commonNames().get(0) : "알 수 없는 식물";
+        String commonName = "알 수 없는 식물";
+        if (topSuggestion.details() != null &&
+                topSuggestion.details().commonNames() != null &&
+                !topSuggestion.details().commonNames().isEmpty()) {
+            commonName = topSuggestion.details().commonNames().get(0);
+        }
 
-        // 5. PlantSpecies 등록/조회 (DB 관리)
+        // 6. DB 등록/조회
         PlantSpecies species = findOrCreatePlantSpecies(topSuggestion);
 
-        // 6. MyPlant 등록을 위한 응답 DTO 구성
         return PlantIdentificationResponseDto.builder()
-                .imageUrl(imageUrl)
+                .imageUrl(s3ImageUrl)
                 .scientificName(scientificName)
                 .commonName(commonName)
                 .speciesId(species.getSpeciesId())
-                .userId(currentUser.getUserId()) // ⬅️ User 엔티티의 PK 필드명(userId)을 따른 Getter 사용
+                .userId(currentUser.getUserId())
                 .build();
     }
 
-    // --- 헬퍼 메소드 ---
-
-    private PlantIdResponseDto requestPlantIdentification(String imageUrl, Double lat, Double lon) {
-        // PlantIdRequestDto 생성자 순서: (images, lat, lon, similarImages(boolean), health(String))
-
-        // ⭐️ [해결] requestedDetails 변수 정의 코드를 추가합니다.
-        List<String> requestedDetails = List.of(
-                "common_names",
-                "official_image_url",
-                "description",
-                "watering",
-                "light_condition"
-        );
+    private PlantIdResponseDto requestPlantIdentification(String imageData, Double lat, Double lon) {
         PlantIdRequestDto requestBody = new PlantIdRequestDto(
-                List.of(imageUrl),
+                List.of(imageData),
                 lat,
                 lon,
-                null, // health: String 타입
-                plantIdApiKey // ⭐️ DTO에 API Key만 전달
-                // requestedDetails <--- 제거
+                true,
+                "all"
         );
 
         return plantIdWebClient.post()
                 .uri(uriBuilder -> uriBuilder
                         .path("/identification")
                         .queryParam("language", "ko")
-                        .queryParam("details", String.join(",", requestedDetails))
                         .build())
                 .bodyValue(requestBody)
                 .retrieve()
@@ -114,7 +112,6 @@ public class PlantIdentificationService {
     }
 
     private PlantSpecies findOrCreatePlantSpecies(PlantIdResponseDto.Suggestion suggestion) {
-        // 학명으로 DB에서 기존 종을 찾습니다.
         String scientificName = suggestion.name();
         Optional<PlantSpecies> existingSpecies = plantSpeciesRepository.findByScientificName(scientificName);
 
@@ -122,17 +119,19 @@ public class PlantIdentificationService {
             return existingSpecies.get();
         }
 
-        // 새로운 종이라면 DB에 등록합니다. (최소한의 정보만 사용)
-        String koreanName = suggestion.details().commonNames() != null && !suggestion.details().commonNames().isEmpty() ?
-                suggestion.details().commonNames().get(0) : scientificName;
+        String koreanName = scientificName;
+        if (suggestion.details() != null &&
+                suggestion.details().commonNames() != null &&
+                !suggestion.details().commonNames().isEmpty()) {
+            koreanName = suggestion.details().commonNames().get(0);
+        }
 
         PlantSpecies newSpecies = PlantSpecies.builder()
                 .scientificName(scientificName)
                 .koreanName(koreanName)
-                // API에서 watering/light 정보를 받아오면 여기에 매핑해야 함.
-                .wateringCycleCode("NORMAL")
-                .sunlightLevelCode("INDIRECT")
-                .isVerifiedByAdmin(false) // API로 등록된 종은 미검증 상태로 설정
+                .wateringFrequency(WaterFrequency.NORMAL)
+                .sunlightLevel(LightLevel.MEDIUM)
+                .isVerifiedByAdmin(false)
                 .build();
 
         return plantSpeciesRepository.save(newSpecies);

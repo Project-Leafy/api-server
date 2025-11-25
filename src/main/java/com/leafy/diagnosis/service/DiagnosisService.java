@@ -6,6 +6,7 @@ import com.leafy.diagnosis.domain.DiagnosisHistory;
 import com.leafy.diagnosis.dto.PlantIdRequestDto;
 import com.leafy.diagnosis.dto.PlantIdResponseDto;
 import com.leafy.diagnosis.repository.DiagnosisHistoryRepository;
+import com.leafy.diagnosis.dto.DiagnosisResponseDto;
 import com.leafy.global.storage.S3UploadService;
 import com.leafy.plant.domain.MyPlant;
 import com.leafy.plant.repository.MyPlantRepository;
@@ -16,123 +17,109 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.reactive.function.client.WebClient;
-import com.leafy.diagnosis.dto.DiagnosisResponseDto;
-import java.util.stream.Collectors;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Base64; // Base64 import 추가
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class DiagnosisService {
 
-    @Value("${PLANT_ID_API_KEY}") // .env 파일의 값을 주입
+    @Value("${PLANT_ID_API_KEY}")
     private String plantIdApiKey;
-    private final WebClient plantIdWebClient; // WebClientConfig에서 생성된 Bean 주입
-    private final S3UploadService s3UploadService; // S3 업로드 서비스 주입
+    private final WebClient plantIdWebClient;
+    private final S3UploadService s3UploadService;
     private final DiagnosisHistoryRepository diagnosisHistoryRepository;
-    private final MyPlantRepository myPlantRepository; // MyPlant 조회를 위해 주입
-    private final ObjectMapper objectMapper; // Treatment 객체를 JSON 문자열로 변환하기 위해 주입
+    private final MyPlantRepository myPlantRepository;
+    private final ObjectMapper objectMapper;
 
     /**
-     * S3에 이미지를 업로드하고, 그 URL로 plant.id 식별 요청 (JSON 방식)
+     * 식물 건강 진단 (S3 URL 대신 Base64 데이터 전송으로 변경)
      */
     public PlantIdResponseDto diagnosePlant(Long myPlantId, MultipartFile imageFile, Double lat, Double lon) throws IOException {
 
-        // 1. MyPlant 엔티티 조회
+        // 1. MyPlant 조회
         MyPlant myPlant = myPlantRepository.findById(myPlantId)
                 .orElseThrow(() -> new EntityNotFoundException("MyPlant not found: " + myPlantId));
 
-        // 2. S3에 이미지 업로드 (S3UploadService 사용)
-        String s3ImageUrl = s3UploadService.upload(imageFile, "diagnosis"); // "diagnosis" 폴더에 저장
+        // 2. S3 업로드 (DB 저장 및 이력 관리용)
+        String s3ImageUrl = s3UploadService.upload(imageFile, "diagnosis");
 
-        List<String> requestedDetails = List.of(
-                "common_names",
-                "url",
-                "description",
-                "diseaseDetails" // 질병 진단 결과에 필요한 항목
-        );
-        // 3. plant.id API 요청 DTO 생성 (Base64가 아닌 S3 URL 전송)
+        // 3. [수정됨] Plant.id API 전송용 Base64 변환
+        // URL 접근 권한 문제를 피하기 위해 파일 자체를 인코딩해서 보냅니다.
+        String base64Data = Base64.getEncoder().encodeToString(imageFile.getBytes());
+        String base64Image = "data:" + imageFile.getContentType() + ";base64," + base64Data;
+
+        // 4. 요청 DTO 생성 (Base64 + health="all")
         PlantIdRequestDto requestBody = new PlantIdRequestDto(
-                List.of(s3ImageUrl),
+                List.of(base64Image), // Base64 문자열 전송
                 lat,
                 lon,
-                "all", // 'all'로 설정하여 건강 진단 요청
-                plantIdApiKey // ⭐️ API Key 전달
-                //requestedDetails // ⭐️ Details 목록 전달
+                true,  // similar_images
+                "all"  // health check
         );
 
-        // 4. plant.id API 호출 (JSON 방식)
+        // 5. Plant.id API 호출
         PlantIdResponseDto response = plantIdWebClient.post()
                 .uri(uriBuilder -> uriBuilder
                         .path("/identification")
                         .queryParam("language", "ko")
-                        // ⭐️ List를 comma-separated String으로 변환하여 쿼리 파라미터로 전송
-                        .queryParam("details", String.join(",", requestedDetails))
+                        // details 파라미터 제거 (API 기본값 사용)
                         .build())
-                .bodyValue(requestBody) // DTO를 JSON 본문으로 전송
+                .bodyValue(requestBody)
                 .retrieve()
                 .bodyToMono(PlantIdResponseDto.class)
                 .block();
 
-        // 5. API 응답 이력 저장
-        if (response != null && "COMPLETED".equalsIgnoreCase(response.status())) {
-            // JsonProcessingException 발생 가능성이 있으므로 try-catch로 감쌉니다.
+        // 6. 결과 저장
+        if (response != null && response.result() != null) {
             try {
                 saveDiagnosisHistory(myPlant, s3ImageUrl, response);
             } catch (JsonProcessingException e) {
-                // JSON 변환 실패 시 예외 처리 (로그 기록 등)
-                // 현재는 런타임 예외로 감싸서 던집니다.
-                throw new RuntimeException("Failed to save diagnosis history due to JSON processing error.", e);
+                throw new RuntimeException("Failed to save diagnosis history.", e);
             }
         }
 
         return response;
     }
 
-    /**
-     * 식별 이력을 DB에 저장하는 헬퍼 메소드 (수정된 부분)
-     */
     private void saveDiagnosisHistory(MyPlant myPlant, String s3ImageUrl, PlantIdResponseDto response) throws JsonProcessingException {
-
         PlantIdResponseDto.Result result = response.result();
-        PlantIdResponseDto.Suggestion topSuggestion = result.classification().suggestions().stream()
-                .findFirst().orElse(null);
 
-        // DiseaseSuggestion은 null 체크와 함께 안전하게 가져옵니다.
-        PlantIdResponseDto.DiseaseSuggestion topDisease = (result.disease() != null && result.disease().suggestions() != null && !result.disease().suggestions().isEmpty()) ?
-                result.disease().suggestions().get(0) : null;
-
-        // DTO에서 정보 추출
-        String plantName = (topSuggestion != null) ? topSuggestion.name() : null;
-        String plantCommonName = (topSuggestion != null && topSuggestion.details() != null && topSuggestion.details().commonNames() != null && !topSuggestion.details().commonNames().isEmpty()) ?
-                topSuggestion.details().commonNames().get(0) : null;
-
-        BigDecimal isPlantProbability = result.isPlant().isPlantProbability();
-        Boolean isHealthy = (result.isHealthy() != null) ? result.isHealthy().binary() : true; // 건강 정보가 없으면 true 간주
-        BigDecimal healthProbability = (result.isHealthy() != null) ? result.isHealthy().healthProbability() : null;
-
-        String diseaseName = null;
-        BigDecimal diseaseProbability = null;
-        String solutionDetail = null;
-
-        if(topDisease != null) {
-            diseaseName = topDisease.name();
-            diseaseProbability = topDisease.diseaseProbability();
-            // Treatment 객체를 JSON 문자열로 변환하여 solutionDetail에 저장
-            if (topDisease.details() != null && topDisease.details().treatment() != null) {
-                solutionDetail = objectMapper.writeValueAsString(topDisease.details().treatment());
-            }
+        // 안전하게 데이터 추출
+        PlantIdResponseDto.Suggestion topSuggestion = null;
+        if (result.classification() != null && result.classification().suggestions() != null) {
+            topSuggestion = result.classification().suggestions().stream().findFirst().orElse(null);
         }
 
-        // DiagnosisHistory 엔티티 생성
+        PlantIdResponseDto.DiseaseSuggestion topDisease = null;
+        if (result.disease() != null && result.disease().suggestions() != null && !result.disease().suggestions().isEmpty()) {
+            topDisease = result.disease().suggestions().get(0);
+        }
+
+        // 값 할당
+        String diseaseName = (topDisease != null) ? topDisease.name() : null;
+        BigDecimal diseaseProbability = (topDisease != null) ? topDisease.diseaseProbability() : null;
+
+        String solutionDetail = null;
+        if (topDisease != null && topDisease.details() != null && topDisease.details().treatment() != null) {
+            solutionDetail = objectMapper.writeValueAsString(topDisease.details().treatment());
+        }
+
+        Boolean isHealthy = (result.isHealthy() != null) ? result.isHealthy().binary() : true;
+        BigDecimal healthProbability = (result.isHealthy() != null) ? result.isHealthy().healthProbability() : null;
+        BigDecimal isPlantProbability = (result.isPlant() != null) ? result.isPlant().isPlantProbability() : BigDecimal.ZERO;
+
+        // 엔티티 생성 및 저장
         DiagnosisHistory history = DiagnosisHistory.builder()
                 .myPlant(myPlant)
                 .diagnosisDatetime(LocalDateTime.now())
-                .requestImageUrl(s3ImageUrl) // S3 URL 저장
+                .requestImageUrl(s3ImageUrl)
                 .apiAccessToken(response.accessToken())
                 .isPlantProbability(isPlantProbability)
                 .isHealthy(isHealthy)
@@ -140,14 +127,11 @@ public class DiagnosisService {
                 .diseaseName(diseaseName)
                 .diseaseProbability(diseaseProbability)
                 .solutionDetail(solutionDetail)
-                // feedback 관련 필드는 초기값 null
                 .build();
 
-        // 4. 저장
         diagnosisHistoryRepository.save(history);
     }
 
-    //  특정 식물의 진단 기록 목록 조회
     @Transactional(readOnly = true)
     public List<DiagnosisResponseDto> findAllByMyPlantId(Long myPlantId) {
         MyPlant myPlant = myPlantRepository.findById(myPlantId)
@@ -159,7 +143,6 @@ public class DiagnosisService {
                 .collect(Collectors.toList());
     }
 
-    //  진단 기록 상세 조회 (ID로 조회)
     @Transactional(readOnly = true)
     public DiagnosisResponseDto findById(Long diagnosisId) {
         DiagnosisHistory history = diagnosisHistoryRepository.findById(diagnosisId)
