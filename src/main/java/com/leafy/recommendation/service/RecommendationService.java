@@ -92,7 +92,7 @@ public class RecommendationService {
 
         // 태그 생성 로직 (프론트엔드 노출용)
         tags.add("#" + plant.getDifficultyLevel().name()); // #EASY
-        if (plant.isPetFriendly()) tags.add("#반려동물안전");
+        if (Boolean.TRUE.equals(plant.getIsPetFriendly())) tags.add("#반려동물안전");
 
         // 하이브리드 추천인 경우 특별 태그 추가
         if (rec.getAnalyzedWateringPattern() != null) {
