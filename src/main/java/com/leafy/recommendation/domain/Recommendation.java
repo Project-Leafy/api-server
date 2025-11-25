@@ -1,22 +1,23 @@
-// com/leafy/recommendation/domain/Recommendation.java
-
 package com.leafy.recommendation.domain;
 
 import com.leafy.global.common.BaseTimeEntity;
+import com.leafy.global.type.DifficultyLevel;
+import com.leafy.global.type.LightLevel;
+import com.leafy.global.type.PlantSize;
+import com.leafy.global.type.WaterFrequency;
 import com.leafy.user.domain.User;
-import io.hypersistence.utils.hibernate.type.json.JsonType; // 1. jsonb 타입을 위한 라이브러리 (implementation 'io.hypersistence:hypersistence-utils-hibernate-60:3.5.2' 와 같은 의존성 추가 필요)
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.Type;
 
 import java.time.LocalDateTime;
-import java.util.Map;
 import java.util.List;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@Builder
 @Entity
 @Table(name = "recommendation")
 public class Recommendation extends BaseTimeEntity {
@@ -26,31 +27,39 @@ public class Recommendation extends BaseTimeEntity {
     @Column(name = "recommendation_id")
     private Long recommendationId;
 
-    // 2. 1:1 관계 (Recommendation(1) -> User(1))
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", unique = true, nullable = false) // 3. FK이면서 Unique
+    @JoinColumn(name = "user_id", unique = true, nullable = false)
     private User user;
 
-    // 4. jsonb 타입 매핑 (Map<String, Object> 또는 특정 DTO 클래스 사용)
-    @Type(JsonType.class)
-    @Column(name = "survey_environment_data", columnDefinition = "jsonb")
-    private Map<String, Object> surveyEnvironmentData;
+    // --- [수정] 1. 설문조사 결과 (JSON Map 대신 명시적 Enum 컬럼 사용) ---
+    // 이유: 추천 알고리즘 로직(Service)에서 비교 연산을 쉽게 하기 위함
 
-    @Type(JsonType.class)
-    @Column(name = "survey_experience_data", columnDefinition = "jsonb")
-    private Map<String, Object> surveyExperienceData;
+    @Enumerated(EnumType.STRING)
+    private LightLevel preferredLight;       // 선호 광량
 
-    @Type(JsonType.class)
-    @Column(name = "survey_preference_data", columnDefinition = "jsonb")
-    private Map<String, Object> surveyPreferenceData;
+    @Enumerated(EnumType.STRING)
+    private WaterFrequency preferredWater;   // 선호 물주기 빈도
 
-    @Column(name = "analyzed_light_level_code", length = 50)
-    private String analyzedLightLevelCode;
+    @Enumerated(EnumType.STRING)
+    private DifficultyLevel userSkill;       // 사용자 숙련도
 
-    @Column(name = "analyzed_watering_pattern_code", length = 50)
-    private String analyzedWateringPatternCode;
+    @Enumerated(EnumType.STRING)
+    private PlantSize preferredSize;         // 선호 식물 크기
 
-    // 5. jsonb (List<String> 예시)
+    private boolean hasPet;                  // 반려동물 여부
+
+    // --- 2. 분석 결과 (배치 작업 업데이트 영역) ---
+
+    // 배치 분석 결과도 Enum으로 관리하여 비교 용이성 확보
+    @Enumerated(EnumType.STRING)
+    @Column(name = "analyzed_light_level_code")
+    private LightLevel analyzedLightLevel;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "analyzed_watering_pattern_code")
+    private WaterFrequency analyzedWateringPattern;
+
+    // 성공/실패 특성은 리스트 형태이므로 JSONB 유지
     @Type(JsonType.class)
     @Column(name = "analyzed_success_traits", columnDefinition = "jsonb")
     private List<String> analyzedSuccessTraits;
@@ -61,10 +70,36 @@ public class Recommendation extends BaseTimeEntity {
 
     private LocalDateTime lastAnalyzedAt;
 
-    // 6. jsonb (List<Long> 예시 - species_id 목록)
+    // --- 3. 추천 결과 저장 ---
     @Type(JsonType.class)
     @Column(name = "recommended_species_ids", columnDefinition = "jsonb")
     private List<Long> recommendedSpeciesIds;
 
     private LocalDateTime lastRecommendedAt;
+
+    // --- 편의 메서드 ---
+
+    // 1. 설문 결과 업데이트 (유저가 설문 다시 했을 때)
+    public void updateSurvey(LightLevel light, WaterFrequency water, DifficultyLevel skill, PlantSize size, boolean hasPet) {
+        this.preferredLight = light;
+        this.preferredWater = water;
+        this.userSkill = skill;
+        this.preferredSize = size;
+        this.hasPet = hasPet;
+    }
+
+    // 2. 분석 결과 업데이트 (배치 스케줄러 용)
+    public void updateAnalysis(LightLevel light, WaterFrequency water, List<String> successTraits, List<String> failureTraits) {
+        if (light != null) this.analyzedLightLevel = light;
+        if (water != null) this.analyzedWateringPattern = water;
+        if (successTraits != null) this.analyzedSuccessTraits = successTraits;
+        if (failureTraits != null) this.analyzedFailureTraits = failureTraits;
+        this.lastAnalyzedAt = LocalDateTime.now();
+    }
+
+    // 3. 추천 결과 업데이트
+    public void updateRecommendations(List<Long> speciesIds) {
+        this.recommendedSpeciesIds = speciesIds;
+        this.lastRecommendedAt = LocalDateTime.now();
+    }
 }

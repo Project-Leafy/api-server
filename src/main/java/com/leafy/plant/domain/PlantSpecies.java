@@ -3,12 +3,12 @@
 package com.leafy.plant.domain;
 
 import com.leafy.global.common.BaseTimeEntity;
+import com.leafy.global.type.DifficultyLevel;
+import com.leafy.global.type.LightLevel;
+import com.leafy.global.type.PlantSize;
+import com.leafy.global.type.WaterFrequency;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.Builder; // ⬅️ 추가
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor; // ⬅️ 추가
+import lombok.*;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE) // ⬅️ 추가
 @Builder // ⬅️ 추가
@@ -36,17 +36,31 @@ public class PlantSpecies extends BaseTimeEntity {
     @Column(name = "genus_name", length = 100)
     private String genusName;
 
-    @Column(name = "watering_cycle_code", nullable = false, length = 50)
-    private String wateringCycleCode; // (Tip: Enum으로 관리하는 것을 추천)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "watering_cycle_code", nullable = false)
+    private WaterFrequency wateringFrequency;
 
-    @Column(name = "sunlight_level_code", nullable = false, length = 50)
-    private String sunlightLevelCode; // (Tip: Enum으로 관리하는 것을 추천)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "sunlight_level_code", nullable = false)
+    private LightLevel sunlightLevel;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "difficulty_level")
+    private DifficultyLevel difficultyLevel;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "size_code")
+    private PlantSize sizeCode; // 설문조사의 '식물 크기'와 매칭
+
+    @Column(name = "is_pet_friendly")
+    private boolean isPetFriendly; // 반려동물 안전 여부
 
     @Column(name = "optimal_temp_celsius", length = 50)
     private String optimalTempCelsius;
 
     @Column(name = "management_tip_detail", columnDefinition = "TEXT")
     private String managementTipDetail;
+
 
     @Column(name = "toxicity_info", columnDefinition = "TEXT")
     private String toxicityInfo;

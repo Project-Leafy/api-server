@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 
+@Tag(name = "Plant Identification", description = "식물 AI 식별 및 등록 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/plants")
@@ -29,13 +31,13 @@ public class PlantIdentificationController {
      * 새로운 식물 이미지 파일을 업로드 받아 plant.id로 식별하고, 등록을 위한 정보를 반환합니다.
      */
     @Operation(summary = "식물 이미지 식별 및 등록 준비",
-            description = "사용자가 업로드한 이미지를 S3에 저장하고, plant.id API로 식물 종을 식별하여 등록에 필요한 정보를 반환합니다.",
+            description = "사용자가 업로드한 이미지를 S3에 저장하고, plant.id API로 식물 종을 식별하여 등록에 필요한 정보를 반환",
             requestBody = @RequestBody(content = @Content(
                     mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
                     schema = @Schema(implementation = PlantIdentificationRequestSchema.class)
             )))
     @PostMapping(value = "/identify", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("isAuthenticated()") // 인증된 사용자만 호출 가능
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<PlantIdentificationResponseDto> identifyNewPlant(
             @RequestParam("image") MultipartFile imageFile,
             @RequestParam(name = "lat", required = false) Double lat,

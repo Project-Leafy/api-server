@@ -5,14 +5,14 @@ package com.leafy.schedule.domain;
 import com.leafy.global.common.BaseTimeEntity;
 import com.leafy.plant.domain.MyPlant;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDate;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@Builder
 @Entity
 @Table(name = "schedule", uniqueConstraints = {
     // 1. ERD의 Unique Index (plant_id, schedule_type) 설정

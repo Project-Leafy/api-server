@@ -16,6 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.reactive.function.client.WebClient;
+import com.leafy.diagnosis.dto.DiagnosisResponseDto;
+import java.util.stream.Collectors;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -143,5 +145,26 @@ public class DiagnosisService {
 
         // 4. 저장
         diagnosisHistoryRepository.save(history);
+    }
+
+    //  특정 식물의 진단 기록 목록 조회
+    @Transactional(readOnly = true)
+    public List<DiagnosisResponseDto> findAllByMyPlantId(Long myPlantId) {
+        MyPlant myPlant = myPlantRepository.findById(myPlantId)
+                .orElseThrow(() -> new EntityNotFoundException("MyPlant not found: " + myPlantId));
+
+        return diagnosisHistoryRepository.findAllByMyPlantOrderByDiagnosisDatetimeDesc(myPlant)
+                .stream()
+                .map(DiagnosisResponseDto::from)
+                .collect(Collectors.toList());
+    }
+
+    //  진단 기록 상세 조회 (ID로 조회)
+    @Transactional(readOnly = true)
+    public DiagnosisResponseDto findById(Long diagnosisId) {
+        DiagnosisHistory history = diagnosisHistoryRepository.findById(diagnosisId)
+                .orElseThrow(() -> new EntityNotFoundException("Diagnosis History not found: " + diagnosisId));
+
+        return DiagnosisResponseDto.from(history);
     }
 }

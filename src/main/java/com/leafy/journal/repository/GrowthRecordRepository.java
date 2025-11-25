@@ -2,6 +2,7 @@ package com.leafy.journal.repository;
 
 import com.leafy.journal.domain.GrowthRecord;
 import com.leafy.plant.domain.MyPlant; // MyPlant 엔티티 import
+import com.leafy.user.domain.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
@@ -14,4 +15,8 @@ public interface GrowthRecordRepository extends JpaRepository<GrowthRecord, Long
     
     // 2. (대안) 식물 ID로 직접 조회
     // List<GrowthRecord> findAllByMyPlantPlantIdOrderByRecordDateDesc(Long plantId);
+
+    // 3. [추가] 특정 사용자의 모든 식물에 대한 성장일지 조회 (최신순)
+    // 해석: GrowthRecord -> MyPlant -> User 가 파라미터 user와 같은지 확인
+    List<GrowthRecord> findAllByMyPlant_UserOrderByRecordDateDesc(User user);
 }
