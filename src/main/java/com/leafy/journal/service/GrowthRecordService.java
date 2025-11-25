@@ -125,4 +125,14 @@ public class GrowthRecordService {
 
         growthRecordRepository.delete(growthRecord);
     }
+
+    /**
+     * 사용자의 모든 식물 성장 일지 모아보기
+     */
+    public List<GrowthRecordResponse> findAllByUser(User user) {
+        return growthRecordRepository.findAllByMyPlant_UserOrderByRecordDateDesc(user)
+                .stream()
+                .map(GrowthRecordResponse::from)
+                .collect(Collectors.toList());
+    }
 }

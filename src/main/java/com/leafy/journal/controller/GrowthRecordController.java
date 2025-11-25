@@ -91,4 +91,14 @@ public class GrowthRecordController {
         growthRecordService.delete(recordId, user);
         return ResponseEntity.noContent().build();
     }
+
+    @Operation(summary = "전체 일지 모아보기 (피드)", description = "내가 키우는 모든 식물의 성장일지를 최신순으로 모아봅니다.")
+    @GetMapping("/journal/feed")
+    public ResponseEntity<List<GrowthRecordResponse>> getAllGrowthRecords(
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        User user = getAuthenticatedUser(userDetails);
+        List<GrowthRecordResponse> responses = growthRecordService.findAllByUser(user);
+        return ResponseEntity.ok(responses);
+    }
 }
