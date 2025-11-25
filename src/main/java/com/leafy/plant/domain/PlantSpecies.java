@@ -68,6 +68,7 @@ public class PlantSpecies extends BaseTimeEntity {
     @Column(name = "official_image_url", length = 2048)
     private String officialImageUrl;
 
+    @Builder.Default
     @Column(name = "is_verified_by_admin", nullable = false)
     private Boolean isVerifiedByAdmin = false;
 

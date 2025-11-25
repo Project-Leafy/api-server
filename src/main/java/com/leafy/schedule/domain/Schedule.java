@@ -46,6 +46,7 @@ public class Schedule extends BaseTimeEntity {
 
     private LocalDate lastCompletedDate;
 
+    @Builder.Default
     @Column(name = "notification_status", nullable = false, length = 50)
     private String notificationStatus = "PENDING"; // (Tip: Enum 관리 추천)
 }

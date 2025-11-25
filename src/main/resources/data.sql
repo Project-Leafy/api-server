@@ -3,9 +3,31 @@ INSERT INTO users (user_id, email, nickname, oauth_provider, current_plants_coun
 (1, 'oksorry12@naver.com', '권준희', 'kakao', 0, false, 'USER', NOW(), NOW());
 
 -- 2. 테스트 식물 종 (PlantSpecies) 데이터 삽입
-INSERT INTO plant_species (species_id, scientific_name, korean_name, watering_cycle_code, sunlight_level_code, is_verified_by_admin, created_at, updated_at) VALUES
-(101, 'Monstera Deliciosa', '몬스테라', '주 1회', '밝은 간접광', false, NOW(), NOW()),
-(102, 'Sansevieria trifasciata', '스투키', '월 1회', '반양지', true, NOW(), NOW());
+-- 101: 몬스테라 (주 1회 -> NORMAL / 밝은 간접광 -> MEDIUM / 난이도 -> EASY / 크기 -> LARGE)
+INSERT INTO plant_species (
+    species_id, scientific_name, korean_name,
+    watering_cycle_code, sunlight_level_code,
+    difficulty_level, size_code,
+    is_verified_by_admin, created_at, updated_at
+) VALUES (
+    101, 'Monstera Deliciosa', '몬스테라',
+    'NORMAL', 'MEDIUM',
+    'EASY', 'LARGE',
+    false, NOW(), NOW()
+);
+
+-- 102: 스투키 (월 1회 -> RARE / 반양지 -> LOW / 난이도 -> EASY / 크기 -> SMALL)
+INSERT INTO plant_species (
+    species_id, scientific_name, korean_name,
+    watering_cycle_code, sunlight_level_code,
+    difficulty_level, size_code,
+    is_verified_by_admin, created_at, updated_at
+) VALUES (
+    102, 'Sansevieria trifasciata', '스투키',
+    'RARE', 'LOW',
+    'EASY', 'SMALL',
+    true, NOW(), NOW()
+);
 
 -- 3. 나의 식물 (MyPlant) 데이터 삽입
 INSERT INTO my_plant (plant_id, user_id, species_id, nickname, adoption_date, image_url, last_watered_date, status_code, created_at, updated_at) VALUES
