@@ -10,8 +10,9 @@ import com.leafy.plant.domain.MyPlant;
 import com.leafy.plant.domain.PlantSpecies;
 import com.leafy.plant.dto.CreateMyPlantRequest;
 import com.leafy.plant.repository.PlantSpeciesRepository;
-import com.leafy.global.exception.EntityNotFoundException; // 아까 만든 예외 사용
+import com.leafy.global.exception.EntityNotFoundException;
 import java.time.LocalDate;
+import com.leafy.schedule.service.ScheduleService;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,6 +24,7 @@ public class MyPlantService {
 
     private final MyPlantRepository myPlantRepository;
     private final PlantSpeciesRepository plantSpeciesRepository;
+    private final ScheduleService scheduleService;
 
     public List<MyPlantResponseDto> findMyPlants(User user) {
         return myPlantRepository.findAllByUserOrderByCreatedAtDesc(user).stream()
@@ -53,7 +55,9 @@ public class MyPlantService {
         // 4. DB 저장
         MyPlant savedPlant = myPlantRepository.save(myPlant);
 
-        // 5. 응답 DTO 반환
+        // 5. 스케줄 자동 생성 호출!
+        scheduleService.createInitialSchedule(savedPlant);
+
         return MyPlantResponseDto.from(savedPlant);
     }
 
