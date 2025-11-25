@@ -53,7 +53,7 @@ public class PlantSpecies extends BaseTimeEntity {
     private PlantSize sizeCode; // 설문조사의 '식물 크기'와 매칭
 
     @Column(name = "is_pet_friendly")
-    private boolean isPetFriendly; // 반려동물 안전 여부
+    public Boolean isPetFriendly; // 반려동물 안전 여부
 
     @Column(name = "optimal_temp_celsius", length = 50)
     private String optimalTempCelsius;
