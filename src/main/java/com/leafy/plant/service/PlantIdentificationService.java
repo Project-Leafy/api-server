@@ -48,6 +48,10 @@ public class PlantIdentificationService {
         User currentUser = userRepository.findByEmail(principalName)
                 .orElseThrow(() -> new EntityNotFoundException("Authenticated User not found"));
 
+        // 위치 정보가 있으면 사용자 정보 갱신 (Smart 알림용)
+        // lat, lon이 null이면 updateLocation 내부에서 무시됨
+        currentUser.updateLocation(lat, lon);
+
         // 2. S3 업로드 (DB 저장용)
         String s3ImageUrl = s3UploadService.upload(imageFile, "identification");
         log.info("Image uploaded to S3: {}", s3ImageUrl);

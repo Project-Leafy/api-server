@@ -8,6 +8,7 @@ import com.leafy.diagnosis.dto.PlantIdResponseDto;
 import com.leafy.diagnosis.repository.DiagnosisHistoryRepository;
 import com.leafy.diagnosis.dto.DiagnosisResponseDto;
 import com.leafy.global.storage.S3UploadService;
+import com.leafy.global.type.DiagnosisFeedbackStep;
 import com.leafy.plant.domain.MyPlant;
 import com.leafy.plant.repository.MyPlantRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -20,6 +21,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Base64; // Base64 import 추가
 import java.util.List;
@@ -115,6 +117,8 @@ public class DiagnosisService {
         BigDecimal healthProbability = (result.isHealthy() != null) ? result.isHealthy().healthProbability() : null;
         BigDecimal isPlantProbability = (result.isPlant() != null) ? result.isPlant().isPlantProbability() : BigDecimal.ZERO;
 
+        LocalDate today = LocalDate.now();
+
         // 엔티티 생성 및 저장
         DiagnosisHistory history = DiagnosisHistory.builder()
                 .myPlant(myPlant)
@@ -127,6 +131,9 @@ public class DiagnosisService {
                 .diseaseName(diseaseName)
                 .diseaseProbability(diseaseProbability)
                 .solutionDetail(solutionDetail)
+                .tipDate(today.plusDays(2))   // D+2
+                .checkDate(today.plusDays(5)) // D+5
+                .feedbackStep(DiagnosisFeedbackStep.NONE)
                 .build();
 
         diagnosisHistoryRepository.save(history);
