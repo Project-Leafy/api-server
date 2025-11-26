@@ -76,4 +76,16 @@ public class MyPlantService {
 
         myPlantRepository.delete(myPlant);
     }
+
+    /**
+     * 식물 상세 조회
+     */
+    public MyPlantResponseDto getMyPlantDetail(Long plantId) {
+        // DB에서 ID로 조회, 없으면 에러 발생
+        MyPlant myPlant = myPlantRepository.findById(plantId)
+                .orElseThrow(() -> new EntityNotFoundException("해당 식물을 찾을 수 없습니다. ID: " + plantId));
+
+        // DTO로 변환하여 반환 (MyPlantResponseDto.from 메서드 안에서 상세 정보 매핑됨)
+        return MyPlantResponseDto.from(myPlant);
+    }
 }
