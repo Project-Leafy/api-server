@@ -82,12 +82,15 @@ public class PlantIdentificationService {
         // 6. DB 등록/조회
         PlantSpecies species = findOrCreatePlantSpecies(topSuggestion);
 
+        Double probability = topSuggestion.probability();
+
         return PlantIdentificationResponseDto.builder()
                 .imageUrl(s3ImageUrl)
                 .scientificName(scientificName)
                 .commonName(commonName)
                 .speciesId(species.getSpeciesId())
                 .userId(currentUser.getUserId())
+                .probability(probability)
                 .build();
     }
 
@@ -103,6 +106,7 @@ public class PlantIdentificationService {
         return plantIdWebClient.post()
                 .uri(uriBuilder -> uriBuilder
                         .path("/identification")
+                        .queryParam("details", "common_names,url")  //추가됨!
                         .queryParam("language", "ko")
                         .build())
                 .bodyValue(requestBody)

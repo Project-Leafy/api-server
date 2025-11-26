@@ -33,3 +33,8 @@ INSERT INTO plant_species (
 INSERT INTO my_plant (plant_id, user_id, species_id, nickname, adoption_date, image_url, last_watered_date, status_code, created_at, updated_at) VALUES
 (1, 1, 101, 'choco', '2024-01-15', 'https://leafy-s3-bucket.s3.ap-northeast-2.amazonaws.com/leafy_test_2.jpg', '2024-05-20', 'HEALTHY', NOW(), NOW()),
 (2, 1, 102, 'banana', '2024-03-10', 'https://leafy-s3-bucket.s3.ap-northeast-2.amazonaws.com/leafy_test.jpg', '2024-05-15', 'HEALTHY', NOW(), NOW());
+
+-- H2 Database 문법 기준 (현재 H2를 쓰고 계십니다)
+ALTER TABLE my_plant ALTER COLUMN plant_id RESTART WITH 100;
+ALTER TABLE users ALTER COLUMN user_id RESTART WITH 100;
+-- (만약 users 테이블도 test data가 있다면 위 줄도 필요할 수 있음)

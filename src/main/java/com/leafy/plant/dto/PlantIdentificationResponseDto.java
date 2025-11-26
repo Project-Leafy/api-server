@@ -11,6 +11,7 @@ public record PlantIdentificationResponseDto(
         Long speciesId, // 식별된 PlantSpecies의 DB ID
         String scientificName, // 식별된 학명 (예: Monstera Deliciosa)
         String commonName, // 식별된 일반명 (예: 몬스테라)
-        String imageUrl // S3에 저장된 이미지 URL
+        String imageUrl, // S3에 저장된 이미지 URL
+        Double probability
         // 추가적으로 API에서 받은 관리 팁, 물주기 주기 등도 포함할 수 있음
 ) {}
