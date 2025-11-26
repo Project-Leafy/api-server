@@ -46,8 +46,13 @@ public class SecurityConfig {
 
                 // API 서버는 폼 로그인을 사용하지 않으므로 명시적으로 비활성화
                 .formLogin(form -> form.disable())
+
+                // H2 Console을 위한 Frame 허용 설정
+                .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()))
+
                 // 세션을 사용하지 않으므로 STATELESS로 설정합니다.
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
                 // 요청에 대한 인가를 설정합니다.
                 .authorizeHttpRequests(auth -> auth
                         // (예시) 향후 관리자 페이지 경로를 여기에 추가할 수 있습니다.

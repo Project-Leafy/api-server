@@ -75,6 +75,8 @@ spring:
             scope:
               - profile_nickname # 카카오 프로필 닉네임 동의
               - account_email # 카카오 계정 이메일 동의
+              - profile_image
+              - talk_message
         provider:
           kakao:
             authorization-uri: https://kauth.kakao.com/oauth/authorize # 카카오 인가 서버 URI
