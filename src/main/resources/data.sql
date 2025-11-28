@@ -22,7 +22,7 @@ INSERT INTO diagnosis_history (
     request_image_url,
     is_plant_probability,
     is_healthy,
-    disease_name,
+    disease_name, -- ✨ 여기!
     disease_probability,
     feedback_step,
     tip_date,
@@ -31,16 +31,16 @@ INSERT INTO diagnosis_history (
     updated_at
 )
 VALUES (
-    1,                   -- plant_id
-    CURRENT_TIMESTAMP(), -- diagnosis_datetime
-    'https://via.placeholder.com/150', -- request_image_url
-    0.98,                -- is_plant_probability
-    false,               -- is_healthy (아픔)
-    'Leaf Spot',         -- disease_name (잎 반점병)
-    0.85,                -- disease_probability
-    'NONE',              -- feedback_step (아직 발송 전)
-    CURRENT_DATE(),      -- tip_date (오늘 날짜 -> 스케줄러가 잡음)
-    DATEADD('DAY', 5, CURRENT_DATE()), -- check_date (5일 뒤)
+    1,
+    CURRENT_TIMESTAMP(),
+    'https://via.placeholder.com/150',
+    0.98,
+    false,
+    '잎 반점병', -- ✨ 한글 병명 입력
+    0.85,
+    'NONE',
+    CURRENT_DATE(),
+    DATEADD('DAY', 5, CURRENT_DATE()),
     CURRENT_TIMESTAMP(),
     CURRENT_TIMESTAMP()
 );
