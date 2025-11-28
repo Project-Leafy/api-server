@@ -9,12 +9,12 @@ import com.leafy.plant.domain.MyPlant;
 import com.leafy.schedule.domain.Schedule;
 import com.leafy.user.domain.User;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@Builder
 @Entity
 @Table(name = "notification", indexes = {
     // 1. ERD의 인덱스 설정: (user_id, created_at)
@@ -43,6 +43,7 @@ public class Notification extends BaseTimeEntity {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String message;
 
+    @Builder.Default
     @Column(name = "is_read", nullable = false)
     private Boolean isRead = false;
 

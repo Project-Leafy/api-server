@@ -3,19 +3,20 @@
 package com.leafy.diagnosis.domain;
 
 import com.leafy.global.common.BaseTimeEntity;
+import com.leafy.global.type.DiagnosisFeedbackStep;
 import com.leafy.plant.domain.MyPlant;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Builder; // ⬅️ 이 부분을 추가해야 합니다.
-import lombok.AllArgsConstructor; // ⬅️ 이 부분도 함께 추가합니다.
+import lombok.Builder;
+import lombok.AllArgsConstructor;
 import java.math.BigDecimal; // 1. decimal(5, 4) 타입을 위해 BigDecimal 사용
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-@AllArgsConstructor(access = AccessLevel.PRIVATE) // ⬅️ 추가: 모든 필드를 인자로 받는 생성자 생성
-@Builder // ⬅️ 추가: Builder 패턴 자동 생성
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@Builder
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
@@ -63,10 +64,21 @@ public class DiagnosisHistory extends BaseTimeEntity {
     @Column(name = "solution_detail", columnDefinition = "TEXT")
     private String solutionDetail;
 
-    private LocalDate feedbackDueDate;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "feedback_step", length = 20)
+    @Builder.Default
+    private DiagnosisFeedbackStep feedbackStep = DiagnosisFeedbackStep.NONE;
+
+    private LocalDate tipDate;   // D+2: 관리 팁 발송 예정일
+    private LocalDate checkDate; // D+5: 상태 확인 예정일 (기존 feedbackDueDate 대체 또는 매핑)
 
     @Column(name = "user_feedback_code", length = 50)
     private String userFeedbackCode; // (Tip: Enum 관리 추천)
 
     private LocalDateTime feedbackAt;
+
+    // 피드백 단계 체크용
+    public void updateStep(DiagnosisFeedbackStep step) {
+        this.feedbackStep = step;
+    }
 }

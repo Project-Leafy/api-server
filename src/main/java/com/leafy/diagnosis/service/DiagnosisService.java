@@ -8,6 +8,7 @@ import com.leafy.diagnosis.dto.PlantIdRequestDto;
 import com.leafy.diagnosis.dto.PlantIdResponseDto;
 import com.leafy.diagnosis.repository.DiagnosisHistoryRepository;
 import com.leafy.global.storage.S3UploadService;
+import com.leafy.global.type.DiagnosisFeedbackStep;
 import com.leafy.plant.domain.MyPlant;
 import com.leafy.plant.repository.MyPlantRepository;
 import com.leafy.user.domain.User;
@@ -22,6 +23,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.Collections;
@@ -151,6 +153,31 @@ public class DiagnosisService {
         } catch (JsonProcessingException e) {
             log.error("Failed to parse treatment solution to JSON", e);
         }
+
+        Boolean isHealthy = (result.isHealthy() != null) ? result.isHealthy().binary() : true;
+        BigDecimal healthProbability = (result.isHealthy() != null) ? result.isHealthy().healthProbability() : null;
+        BigDecimal isPlantProbability = (result.isPlant() != null) ? result.isPlant().isPlantProbability() : BigDecimal.ZERO;
+
+        LocalDate today = LocalDate.now();
+
+        // 엔티티 생성 및 저장
+        DiagnosisHistory history = DiagnosisHistory.builder()
+                .myPlant(myPlant)
+                .diagnosisDatetime(LocalDateTime.now())
+                .requestImageUrl(s3ImageUrl)
+                .apiAccessToken(response.accessToken())
+                .isPlantProbability(isPlantProbability)
+                .isHealthy(isHealthy)
+                .healthProbability(healthProbability)
+                .diseaseName(diseaseName)
+                .diseaseProbability(diseaseProbability)
+                .solutionDetail(solutionDetail)
+                .tipDate(today.plusDays(2))   // D+2
+                .checkDate(today.plusDays(5)) // D+5
+                .feedbackStep(DiagnosisFeedbackStep.NONE)
+                .build();
+
+        diagnosisHistoryRepository.save(history);
     }
 
     /**

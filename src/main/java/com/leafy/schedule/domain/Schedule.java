@@ -49,4 +49,9 @@ public class Schedule extends BaseTimeEntity {
     @Builder.Default
     @Column(name = "notification_status", nullable = false, length = 50)
     private String notificationStatus = "PENDING"; // (Tip: Enum 관리 추천)
+
+    // --- 알림 상태 변경 메서드 ---
+    public void changeNotificationStatus(String status) {
+        this.notificationStatus = status;
+    }
 }

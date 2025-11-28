@@ -18,26 +18,33 @@ public class ScheduleService {
     private final ScheduleRepository scheduleRepository;
 
     /**
-     * 식물 등록 시 초기 물주기 스케줄 자동 생성
+     * 식물 등록 시 3종 관리 스케줄(물주기, 분갈이, 비료) 자동 생성
      */
     public void createInitialSchedule(MyPlant myPlant) {
-        // [수정] String -> Enum(WaterFrequency)으로 변경됨
+        // 1. 물주기 스케줄 (기존 로직)
         WaterFrequency frequencyEnum = myPlant.getPlantSpecies().getWateringFrequency();
+        int waterDays = convertFrequencyToDays(frequencyEnum);
+        saveSchedule(myPlant, "WATERING", waterDays);
 
-        // 2. Enum을 일수(Integer)로 변환
-        int frequency = convertFrequencyToDays(frequencyEnum);
+        // 2. 분갈이 스케줄 (기본 1년)
+        // 추후 식물 크기나 성장 속도에 따라 조정 가능
+        saveSchedule(myPlant, "REPOTTING", 365);
 
-        // 3. 스케줄 엔티티 생성
+        // 3. 비료/영양제 스케줄 (기본 30일)
+        // 겨울철(휴면기) 등은 추후 날짜 계산 로직에서 제외 가능
+        saveSchedule(myPlant, "FERTILIZING", 30);
+    }
+
+    // 스케줄 저장 헬퍼 메서드
+    private void saveSchedule(MyPlant myPlant, String type, int frequencyDays) {
         Schedule schedule = Schedule.builder()
                 .myPlant(myPlant)
-                .scheduleType("WATERING")
-                .frequencyDays(frequency)
-                .nextDueDate(LocalDate.now().plusDays(frequency))
-                // notificationStatus는 @Builder.Default로 설정했으므로 생략 가능(혹은 명시)
-                .notificationStatus("ACTIVE")
+                .scheduleType(type) // WATERING, REPOTTING, FERTILIZING
+                .frequencyDays(frequencyDays)
+                .nextDueDate(LocalDate.now().plusDays(frequencyDays)) // 오늘 + 주기 = 예정일
+                .notificationStatus("PENDING")
                 .build();
 
-        // 4. 저장
         scheduleRepository.save(schedule);
     }
 

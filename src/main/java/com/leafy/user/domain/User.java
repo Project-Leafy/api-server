@@ -42,6 +42,13 @@ public class User extends BaseTimeEntity {
 
     private LocalDateTime refreshTokenExpiresAt;
 
+    //    카카오 API 연동을 위한 토큰 필드
+    @Column(name = "kakao_access_token", columnDefinition = "TEXT")
+    private String kakaoAccessToken;
+
+    @Column(name = "kakao_refresh_token", columnDefinition = "TEXT")
+    private String kakaoRefreshToken;
+
     @Column(nullable = false)
     private Integer currentPlantsCount = 0; // 4. default: 0 설정 (Wrapper 타입보단 primitive 타입 권장)
 
@@ -55,6 +62,10 @@ public class User extends BaseTimeEntity {
     @Column(nullable = false, length = 20)
     private Role role;
 
+    // 사용자 위치 정보 (날씨 조회용)
+    private Double latitude;  // 위도
+    private Double longitude; // 경도
+
     // (빌더 패턴 등 필요한 메서드 추가)
     @Builder
     public User(String email, String nickname, String oauthProvider, String oauthProviderId, String profilePhotoUrl, Role role) {
@@ -64,5 +75,22 @@ public class User extends BaseTimeEntity {
         this.oauthProviderId = oauthProviderId;
         this.profilePhotoUrl = profilePhotoUrl;
         this.role = role; // ✨ Role 추가
+    }
+
+    // 카카오 토큰 저장/갱신 메서드 ---
+    public void updateKakaoToken(String accessToken, String refreshToken) {
+        this.kakaoAccessToken = accessToken;
+        // Refresh Token은 매번 새로 발급되지 않을 수 있으므로 null이 아닐 때만 업데이트
+        if (refreshToken != null) {
+            this.kakaoRefreshToken = refreshToken;
+        }
+    }
+
+    // 위치 정보 업데이트 메서드
+    public void updateLocation(Double lat, Double lon) {
+        if (lat != null && lon != null) {
+            this.latitude = lat;
+            this.longitude = lon;
+        }
     }
 }
