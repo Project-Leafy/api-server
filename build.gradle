@@ -25,38 +25,84 @@ repositories {
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-	compileOnly 'org.projectlombok:lombok'
-	runtimeOnly 'org.postgresql:postgresql'
-	annotationProcessor 'org.projectlombok:lombok'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    // =================================================================
+    // 1. 웹 & 유효성 검사 (Web Core)
+    // =================================================================
+    // 스프링 부트 웹 개발 필수요소 (Tomcat 내장, REST API 구현)
+    implementation 'org.springframework.boot:spring-boot-starter-web'
 
-	// 👇 .env 파일을 읽어오는 gradle-dotenv 플러그인
-	implementation 'io.github.cdimascio:java-dotenv:5.1.1'
-
-	// 1. Swagger (SpringDoc) - API 문서 자동화
-    // 우리가 논의했던, 수동으로 추가해야 하는 의존성
-    implementation 'org.springdoc:springdoc-openapi-ui:1.6.15'
-
-    // 2. Spring Security - 인증/인가 (로그인)
-    implementation 'org.springframework.boot:spring-boot-starter-security'
-	testImplementation 'org.springframework.security:spring-security-test'
-
-    // 3. Validation - 유효성 검사
+    // 입력값 검증 (@NotNull, @Email 등 사용) - 이상한 데이터 방어
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 
-    // 4. AWS S3 - 이미지 저장소 (Spring Cloud AWS)
+
+    // =================================================================
+    // 2. 데이터베이스 & JPA (Persistence Layer)
+    // =================================================================
+    // 자바 객체와 DB 테이블을 연결해주는 표준 기술 (ORM)
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+    // PostgreSQL DB와 연결하기 위한 드라이버 (실행 시에만 필요)
+    runtimeOnly 'org.postgresql:postgresql'
+
+    // PostgreSQL의 JSONB 타입을 자바 엔티티에 쉽게 매핑해주는 유틸리티
+    // (식물의 성장 기록이나 다양한 속성을 JSON으로 저장할 때 사용)
+    implementation 'io.hypersistence:hypersistence-utils-hibernate-60:3.5.2'
+
+
+    // =================================================================
+    // 3. 보안 & 인증 (Security & Auth)
+    // =================================================================
+    // 스프링 시큐리티 핵심 라이브러리 (로그인, 권한 관리)
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+
+    // 소셜 로그인(구글, 카카오 등)을 위한 OAuth2 클라이언트
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+
+    // [JWT 토큰 관련 라이브러리]
+    // - 컴파일/실행 모두 필요하여 implementation으로 설정 (버전 호환성 문제 해결)
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.5'     // API 인터페이스
+    implementation 'io.jsonwebtoken:jjwt-impl:0.12.5'    // 구현체
+    implementation 'io.jsonwebtoken:jjwt-jackson:0.12.5' // JSON 변환기
+
+
+    // =================================================================
+    // 4. 인프라 & 외부 연동 (Infra & External)
+    // =================================================================
+    // AWS S3 연동 (반려식물 사진 업로드 저장소)
     implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:3.1.1'
 
-    // 5. JWT (JSON Web Token) - 토큰 관리
-    implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
-    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.5'
-    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.5' // 또는 jjwt-gson
-
-    // 6. WebClient (Http Client) - 외부 API 호출
+    // WebClient (비동기 HTTP 클라이언트)
+    // - 추후 추천 알고리즘 서버나 공공데이터 포털 API 호출 시 사용
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+    // .env 파일 로더 (DB 비밀번호, AWS 키 등 민감정보 보호)
+    implementation 'io.github.cdimascio:java-dotenv:5.1.1'
+
+
+    // =================================================================
+    // 5. 문서화 & 코드 유틸리티 (Docs & Utils)
+    // =================================================================
+    // Swagger UI (API 명세서 자동 생성) - 최신 스프링 부트 3.x 호환 버전
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
+
+    // Lombok (반복 코드 제거) - 컴파일 시에만 관여하고 빠짐
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+
+    // =================================================================
+    // 6. 개발 및 테스트 전용 (Dev & Test Only) - 배포 시 제외됨
+    // =================================================================
+    // 개발 편의 도구 (서버 자동 재시작 등)
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+    // 인메모리 간편 DB (개발용 DB)
+    developmentOnly 'com.h2database:h2'
+
+    // 테스트 코드 작성 및 실행 도구 (JUnit, Mockito 등)
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test' // 시큐리티 관련 테스트
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher' // 테스트 실행 엔진
 }
 
 tasks.named('test') {
