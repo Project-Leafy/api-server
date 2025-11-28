@@ -82,12 +82,15 @@ public class PlantIdentificationService {
         // 6. DB 등록/조회
         PlantSpecies species = findOrCreatePlantSpecies(topSuggestion);
 
+        Double probability = topSuggestion.probability();
+
         return PlantIdentificationResponseDto.builder()
                 .imageUrl(s3ImageUrl)
                 .scientificName(scientificName)
                 .commonName(commonName)
                 .speciesId(species.getSpeciesId())
                 .userId(currentUser.getUserId())
+                .probability(probability)
                 .build();
     }
 
@@ -103,6 +106,7 @@ public class PlantIdentificationService {
         return plantIdWebClient.post()
                 .uri(uriBuilder -> uriBuilder
                         .path("/identification")
+                        .queryParam("details", "common_names,url,description,taxonomy,rank")  //수정
                         .queryParam("language", "ko")
                         .build())
                 .bodyValue(requestBody)
@@ -126,9 +130,23 @@ public class PlantIdentificationService {
             koreanName = suggestion.details().commonNames().get(0);
         }
 
+        // 👇 [수정 2] 설명(Description) 꺼내는 코드 추가 (여기부터)
+        String description = "상세 정보가 없습니다.";
+        if (suggestion.details() != null && suggestion.details().description() != null) {
+            description = suggestion.details().description().value();
+        }
+
+        String optimalTemp = "정보 없음";
+        String toxicityInfo = "정보 없음";
+        // 👆 (여기까지 추가)
+
+        // 👇 [수정 3] 빌더(Builder)에 managementTipDetail 넣기
         PlantSpecies newSpecies = PlantSpecies.builder()
                 .scientificName(scientificName)
                 .koreanName(koreanName)
+                .managementTipDetail(description) // 👈 이 줄을 꼭 추가해야 한다!
+                .optimalTempCelsius(optimalTemp)  // 👈 (선택) 기본값 저장
+                .toxicityInfo(toxicityInfo)       // 👈 (선택) 기본값 저장
                 .wateringFrequency(WaterFrequency.NORMAL)
                 .sunlightLevel(LightLevel.MEDIUM)
                 .isVerifiedByAdmin(false)

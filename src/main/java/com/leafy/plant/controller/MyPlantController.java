@@ -72,4 +72,12 @@ public class MyPlantController {
         myPlantService.delete(plantId, user);
         return ResponseEntity.noContent().build();
     }
+
+    @Operation(summary = "반려식물 상세 조회", description = "특정 반려식물의 상세 정보(관리 팁, 적정 온도 등 포함)를 조회합니다.")
+    @GetMapping("/{plantId}")
+    public ResponseEntity<MyPlantResponseDto> getMyPlantDetail(@PathVariable Long plantId) {
+        // 서비스에 요청해서 DTO를 받아옴
+        MyPlantResponseDto response = myPlantService.getMyPlantDetail(plantId);
+        return ResponseEntity.ok(response);
+    }
 }
