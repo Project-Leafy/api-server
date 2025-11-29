@@ -22,6 +22,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.List;
+import java.util.Map;
 
 @Tag(name = "My Plant", description = "내 반려식물 관리 API")
 @RestController
@@ -80,5 +81,27 @@ public class MyPlantController {
         // 81 라인의 변수 선언부도 변경해야 한다 이다.
         PlantDetailResponseDto response = myPlantService.getMyPlantDetail(plantId);
         return ResponseEntity.ok(response);
+    }
+
+    // ✅ 새로 추가: 반려식물 정보 업데이트
+    @Operation(summary = "반려식물 정보 수정", description = "반려식물의 닉네임 또는 입양일을 수정합니다.")
+    @PatchMapping("/{plantId}")
+    public ResponseEntity<?> updateMyPlant(
+            @PathVariable Long plantId,
+            @RequestBody Map<String, Object> updates,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        try {
+            User user = getAuthenticatedUser(userDetails);
+            MyPlantResponseDto response = myPlantService.updateMyPlant(plantId, updates, user);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("업데이트 실패: " + e.getMessage());
+        }
     }
 }

@@ -20,6 +20,7 @@ import java.time.LocalDate;
 import com.leafy.schedule.service.ScheduleService;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -51,6 +52,7 @@ public class MyPlantService {
 
         // 2. 입양일 설정 (입력 없으면 오늘 날짜)
         LocalDate adoptionDate = request.adoptionDate() != null ? request.adoptionDate() : LocalDate.now();
+
 
         // 3. 내 식물(MyPlant) 객체 생성
         MyPlant myPlant = MyPlant.builder()
@@ -104,4 +106,42 @@ public class MyPlantService {
         // JSON 파싱 및 최종 DTO 조립은 PlantDetailResponseDto.of()에서 처리된다 이다.
         return PlantDetailResponseDto.of(myPlant, latestHistory, objectMapper); // ✅ DTO 반환
     }
+
+    // ✅ 새로 추가: 식물 정보 업데이트
+    /**
+     * 식물 정보 업데이트 (닉네임, 입양일)
+     */
+    @Transactional
+    public MyPlantResponseDto updateMyPlant(Long plantId, Map<String, Object> updates, User user) {
+        // 1. MyPlant 조회
+        MyPlant myPlant = myPlantRepository.findById(plantId)
+                .orElseThrow(() -> new EntityNotFoundException("식물을 찾을 수 없습니다. ID: " + plantId));
+
+        // 2. 권한 체크 (본인의 식물인지 확인)
+        if (!myPlant.getUser().getUserId().equals(user.getUserId())) {
+            throw new IllegalArgumentException("권한이 없습니다.");
+        }
+
+        // 3. 닉네임 업데이트
+        if (updates.containsKey("nickname")) {
+            String nickname = (String) updates.get("nickname");
+            myPlant.updateNickname(nickname);
+            log.info("식물 ID {} 닉네임 업데이트: {}", plantId, nickname);
+        }
+
+        // 4. 입양일 업데이트
+        if (updates.containsKey("adoptionDate")) {
+            String dateStr = (String) updates.get("adoptionDate");
+            LocalDate adoptionDate = LocalDate.parse(dateStr);
+            myPlant.updateAdoptionDate(adoptionDate);
+            log.info("식물 ID {} 입양일 업데이트: {}", plantId, adoptionDate);
+        }
+
+        // 5. 저장 (더티 체킹으로 자동 업데이트되지만 명시적으로 save 호출)
+        MyPlant savedMyPlant = myPlantRepository.save(myPlant);
+
+        // 6. DTO로 변환하여 반환
+        return MyPlantResponseDto.from(savedMyPlant);
+    }
+
 }

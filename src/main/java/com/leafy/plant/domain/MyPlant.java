@@ -51,4 +51,17 @@ public class MyPlant extends BaseTimeEntity {
     // ✅ 이 필드가 있는지 확인하고 없다면 추가한다 이다.
     @Column(name = "identification_result", columnDefinition = "TEXT")
     private String identificationResult;
+
+    // ✅ 업데이트 메서드 추가
+    public void updateNickname(String nickname) {
+        if (nickname != null && !nickname.trim().isEmpty()) {
+            this.nickname = nickname;
+        }
+    }
+
+    public void updateAdoptionDate(LocalDate adoptionDate) {
+        if (adoptionDate != null) {
+            this.adoptionDate = adoptionDate;
+        }
+    }
 }
