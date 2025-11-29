@@ -1,6 +1,7 @@
 package com.leafy.plant.controller;
 
 import com.leafy.plant.dto.MyPlantResponseDto;
+import com.leafy.plant.dto.PlantDetailResponseDto;
 import com.leafy.plant.service.MyPlantService;
 import com.leafy.user.domain.User;
 import com.leafy.user.repository.UserRepository;
@@ -75,9 +76,9 @@ public class MyPlantController {
 
     @Operation(summary = "반려식물 상세 조회", description = "특정 반려식물의 상세 정보(관리 팁, 적정 온도 등 포함)를 조회합니다.")
     @GetMapping("/{plantId}")
-    public ResponseEntity<MyPlantResponseDto> getMyPlantDetail(@PathVariable Long plantId) {
-        // 서비스에 요청해서 DTO를 받아옴
-        MyPlantResponseDto response = myPlantService.getMyPlantDetail(plantId);
+    public ResponseEntity<PlantDetailResponseDto> getMyPlantDetail(@PathVariable Long plantId) {
+        // 81 라인의 변수 선언부도 변경해야 한다 이다.
+        PlantDetailResponseDto response = myPlantService.getMyPlantDetail(plantId);
         return ResponseEntity.ok(response);
     }
 }

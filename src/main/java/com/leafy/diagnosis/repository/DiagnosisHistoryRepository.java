@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public interface DiagnosisHistoryRepository extends JpaRepository<DiagnosisHistory, Long> {
 
@@ -20,4 +21,6 @@ public interface DiagnosisHistoryRepository extends JpaRepository<DiagnosisHisto
     //  피드백에 대한 응답(D+5)을 해야 하고, 팁은 보냈던(TIP_SENT) 기록 조회
     List<DiagnosisHistory> findAllByCheckDateAndFeedbackStep(LocalDate date, DiagnosisFeedbackStep step);
 
+    // ✅ [추가] 2단계: 특정 식물의 가장 최근 진단 기록 1개 조회
+    Optional<DiagnosisHistory> findTopByMyPlantOrderByDiagnosisDatetimeDesc(MyPlant myPlant);
 }

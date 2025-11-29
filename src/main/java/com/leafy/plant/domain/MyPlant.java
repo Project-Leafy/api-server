@@ -2,6 +2,7 @@
 
 package com.leafy.plant.domain;
 
+
 import com.leafy.global.common.BaseTimeEntity;
 import com.leafy.user.domain.User; // 1. 다른 도메인의 User 엔티티 import
 import jakarta.persistence.*;

@@ -1,5 +1,10 @@
 package com.leafy.plant.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper; // ✅ 추가
+import com.leafy.diagnosis.repository.DiagnosisHistoryRepository;
+import com.leafy.plant.dto.PlantDetailResponseDto; // ✅ 추가 (반환 타입 변경)
+import com.leafy.diagnosis.domain.DiagnosisHistory; // ✅ 추가 (Optional 사용)
+import lombok.extern.slf4j.Slf4j; // ✅ 추가
 import com.leafy.plant.dto.MyPlantResponseDto;
 import com.leafy.plant.repository.MyPlantRepository;
 import com.leafy.user.domain.User;
@@ -15,8 +20,10 @@ import java.time.LocalDate;
 import com.leafy.schedule.service.ScheduleService;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Slf4j // ✅ 추가
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -25,6 +32,8 @@ public class MyPlantService {
     private final MyPlantRepository myPlantRepository;
     private final PlantSpeciesRepository plantSpeciesRepository;
     private final ScheduleService scheduleService;
+    private final DiagnosisHistoryRepository diagnosisHistoryRepository; // ✅ 주입
+    private final ObjectMapper objectMapper; // ✅ 주입
 
     public List<MyPlantResponseDto> findMyPlants(User user) {
         return myPlantRepository.findAllByUserOrderByCreatedAtDesc(user).stream()
@@ -50,6 +59,7 @@ public class MyPlantService {
                 .nickname(request.nickname())
                 .imageUrl(request.imageUrl())
                 .adoptionDate(adoptionDate)
+                .identificationResult(request.identificationResult()) // ✅ 추가: 식별 결과 JSON 저장
                 .build();
 
         // 4. DB 저장
@@ -79,13 +89,19 @@ public class MyPlantService {
 
     /**
      * 식물 상세 조회
+     * 반환 타입: MyPlantResponseDto -> PlantDetailResponseDto로 변경
      */
-    public MyPlantResponseDto getMyPlantDetail(Long plantId) {
-        // DB에서 ID로 조회, 없으면 에러 발생
+    public PlantDetailResponseDto getMyPlantDetail(Long plantId) {
+        // 1. MyPlant 조회
         MyPlant myPlant = myPlantRepository.findById(plantId)
                 .orElseThrow(() -> new EntityNotFoundException("해당 식물을 찾을 수 없습니다. ID: " + plantId));
 
-        // DTO로 변환하여 반환 (MyPlantResponseDto.from 메서드 안에서 상세 정보 매핑됨)
-        return MyPlantResponseDto.from(myPlant);
+        // 2. 최신 진단 기록 조회
+        Optional<DiagnosisHistory> latestHistory = diagnosisHistoryRepository
+                .findTopByMyPlantOrderByDiagnosisDatetimeDesc(myPlant);
+
+        // 3. PlantDetailResponseDto의 팩토리 메서드를 사용하여 모든 정보를 취합 후 반환
+        // JSON 파싱 및 최종 DTO 조립은 PlantDetailResponseDto.of()에서 처리된다 이다.
+        return PlantDetailResponseDto.of(myPlant, latestHistory, objectMapper); // ✅ DTO 반환
     }
 }

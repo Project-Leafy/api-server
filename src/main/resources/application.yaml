@@ -10,7 +10,6 @@ springdoc:
     path: /swagger-ui.html
     tags-sorter: alpha
   default-consumes-media-type: application/json;charset=UTF-8
-  default-produces-media-type: application/json;charset=UTF-8
 
 # --- 🔐 JWT (보안 설정 구현 시 사용) ---
 jwt:
