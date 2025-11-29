@@ -46,4 +46,8 @@ public class MyPlant extends BaseTimeEntity {
     @Builder.Default
     @Column(name = "status_code", nullable = false, length = 50)
     private String statusCode = "HEALTHY"; // (Tip: Enum 관리 추천)
+
+    // ✅ 이 필드가 있는지 확인하고 없다면 추가한다 이다.
+    @Column(name = "identification_result", columnDefinition = "TEXT")
+    private String identificationResult;
 }
