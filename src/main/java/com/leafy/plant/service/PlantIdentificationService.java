@@ -75,6 +75,31 @@ public class PlantIdentificationService {
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("No plant suggestions found."));
 
+        // 👇👇👇 [수정 1] 전체 후보 목록을 DTO 리스트로 변환하는 로직 (일반명/설명 추가) 👇👇👇
+        List<PlantIdentificationResponseDto.Suggestion> suggestionList = response.result().classification().suggestions().stream()
+                .map(s -> {
+                    // 후보의 일반명 추출
+                    String commonNameForSuggestion = s.name();
+                    if (s.details() != null && s.details().commonNames() != null && !s.details().commonNames().isEmpty()) {
+                        commonNameForSuggestion = s.details().commonNames().get(0);
+                    }
+                    // 후보의 상세 설명 추출
+                    String descriptionForSuggestion = (s.details() != null && s.details().description() != null)
+                            ? s.details().description().value()
+                            : "제공된 상세 설명이 없습니다.";
+
+                    return PlantIdentificationResponseDto.Suggestion.builder()
+                            .name(s.name())
+                            .scientificName(s.name())
+                            .probability(s.probability())
+                            .imageUrl(s.details() != null ? s.details().url() : null)
+                            .commonName(commonNameForSuggestion)   // ⬅️ 일반명 추가
+                            .description(descriptionForSuggestion) // ⬅️ 상세 설명 추가
+                            .build();
+                })
+                .toList();
+        // 👆👆👆 [수정 1] 전체 후보 목록을 DTO 리스트로 변환하는 로직 끝 👆👆👆
+
         String scientificName = topSuggestion.name();
         String commonName = "알 수 없는 식물";
         if (topSuggestion.details() != null &&
@@ -95,6 +120,7 @@ public class PlantIdentificationService {
                 .speciesId(species.getSpeciesId())
                 .userId(currentUser.getUserId())
                 .probability(probability)
+                .suggestions(suggestionList)
                 .build();
     }
 
