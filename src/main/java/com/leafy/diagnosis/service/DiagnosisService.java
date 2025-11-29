@@ -134,11 +134,11 @@ public class DiagnosisService {
             BigDecimal isPlantProb = (result.isPlant() != null && result.isPlant().isPlantProbability() != null)
                     ? result.isPlant().isPlantProbability() : BigDecimal.ZERO;
 
-            // 6. 엔티티 빌드 및 저장
+            // 6. 엔티티 빌드 및 저장 (✅ 이 코드가 올바르다)
             DiagnosisHistory history = DiagnosisHistory.builder()
                     .myPlant(myPlant)
                     .diagnosisDatetime(LocalDateTime.now())
-                    .requestImageUrl(imageUrl)
+                    .requestImageUrl(imageUrl) // 매개변수로 받은 imageUrl 사용
                     .apiAccessToken(response.accessToken())
                     .isPlantProbability(isPlantProb)
                     .isHealthy(isHealthyVal)
@@ -146,6 +146,10 @@ public class DiagnosisService {
                     .diseaseName(diseaseName)
                     .diseaseProbability(diseaseProb)
                     .solutionDetail(solutionJson)
+                    // D+2, D+5 날짜 정보는 여기서 추가되어야 한다 이다.
+                    .tipDate(LocalDate.now().plusDays(2))
+                    .checkDate(LocalDate.now().plusDays(5))
+                    .feedbackStep(DiagnosisFeedbackStep.NONE) // @Builder.Default 설정되어 있으나 명시적으로 지정
                     .build();
 
             diagnosisHistoryRepository.save(history);
@@ -154,30 +158,30 @@ public class DiagnosisService {
             log.error("Failed to parse treatment solution to JSON", e);
         }
 
-        Boolean isHealthy = (result.isHealthy() != null) ? result.isHealthy().binary() : true;
-        BigDecimal healthProbability = (result.isHealthy() != null) ? result.isHealthy().healthProbability() : null;
-        BigDecimal isPlantProbability = (result.isPlant() != null) ? result.isPlant().isPlantProbability() : BigDecimal.ZERO;
-
-        LocalDate today = LocalDate.now();
-
-        // 엔티티 생성 및 저장
-        DiagnosisHistory history = DiagnosisHistory.builder()
-                .myPlant(myPlant)
-                .diagnosisDatetime(LocalDateTime.now())
-                .requestImageUrl(s3ImageUrl)
-                .apiAccessToken(response.accessToken())
-                .isPlantProbability(isPlantProbability)
-                .isHealthy(isHealthy)
-                .healthProbability(healthProbability)
-                .diseaseName(diseaseName)
-                .diseaseProbability(diseaseProbability)
-                .solutionDetail(solutionDetail)
-                .tipDate(today.plusDays(2))   // D+2
-                .checkDate(today.plusDays(5)) // D+5
-                .feedbackStep(DiagnosisFeedbackStep.NONE)
-                .build();
-
-        diagnosisHistoryRepository.save(history);
+//        Boolean isHealthy = (result.isHealthy() != null) ? result.isHealthy().binary() : true;
+//        BigDecimal healthProbability = (result.isHealthy() != null) ? result.isHealthy().healthProbability() : null;
+//        BigDecimal isPlantProbability = (result.isPlant() != null) ? result.isPlant().isPlantProbability() : BigDecimal.ZERO;
+//
+//        LocalDate today = LocalDate.now();
+//
+//        // 엔티티 생성 및 저장
+//        DiagnosisHistory history = DiagnosisHistory.builder()
+//                .myPlant(myPlant)
+//                .diagnosisDatetime(LocalDateTime.now())
+//                .requestImageUrl(s3ImageUrl)
+//                .apiAccessToken(response.accessToken())
+//                .isPlantProbability(isPlantProbability)
+//                .isHealthy(isHealthy)
+//                .healthProbability(healthProbability)
+//                .diseaseName(diseaseName)
+//                .diseaseProbability(diseaseProbability)
+//                .solutionDetail(solutionDetail)
+//                .tipDate(today.plusDays(2))   // D+2
+//                .checkDate(today.plusDays(5)) // D+5
+//                .feedbackStep(DiagnosisFeedbackStep.NONE)
+//                .build();
+//
+//        diagnosisHistoryRepository.save(history);
     }
 
     /**
