@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -30,6 +31,7 @@ public class PlantDetailResponseDto {
     @JsonProperty("image_url")
     private String imageUrl;
 
+    private LocalDate adoptionDate; // ✅ 이 필드 추가
     private List<IdentificationCandidateDto> identificationCandidates;
     private DiagnosisResponseDto latestDiagnosis;
 
@@ -59,6 +61,7 @@ public class PlantDetailResponseDto {
                 .nickname(myPlant.getNickname())
                 .imageUrl(myPlant.getImageUrl())
                 .identificationCandidates(candidates)
+                .adoptionDate(myPlant.getAdoptionDate()) // ✅ 이 부분 추가
                 .latestDiagnosis(latestHistory.map(DiagnosisResponseDto::from).orElse(null))
                 .build();
     }
