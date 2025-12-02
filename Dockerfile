@@ -1,11 +1,12 @@
-# Gradle 빌드 단계
+# 1단계: 빌드 (gradle)
 FROM gradle:8.7-jdk17 AS build
-COPY --chown=gradle:gradle . /home/gradle/src
-WORKDIR /home/gradle/src
+WORKDIR /app
+COPY . .
 RUN gradle bootJar --no-daemon
 
-# 실행 단계
-FROM openjdk:17-jdk
-COPY --from=build /home/gradle/src/build/libs/*.jar app.jar
+# 2단계: 실행 (openjdk 대신 eclipse-temurin 사용 → 100% 성공)
+FROM eclipse-temurin:17-jdk-alpine
+WORKDIR /app
+COPY --from=build /app/build/libs/*.jar app.jar
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "/app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
