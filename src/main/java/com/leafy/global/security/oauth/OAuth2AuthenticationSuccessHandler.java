@@ -87,7 +87,9 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         System.out.println("=========================================================");
 
         // 프론트엔드 URL로 리다이렉트 (포트 번호 확인: 5500)
-        String redirectUrl = "http://localhost:5500/callback.html#accessToken=" + tokenInfo.getAccessToken();
+        //String redirectUrl = "http://localhost:5500/callback.html#accessToken=" + tokenInfo.getAccessToken();
+        // 이걸로 바꿔 (포트 80이라 생략 가능)
+        String redirectUrl = "http://3.36.110.234/callback.html#accessToken=" + tokenInfo.getAccessToken();
         response.sendRedirect(redirectUrl);
     }
 }
