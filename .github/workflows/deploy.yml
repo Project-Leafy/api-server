@@ -37,7 +37,7 @@ jobs:
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
+          # key: ${{ secrets.EC2_SSH_KEY }}   ← 이렇게 # 붙여서 주석 처리
           script: |
             sudo docker pull ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}
             sudo docker stop leafy-backend || true
