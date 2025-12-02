@@ -37,9 +37,9 @@ jobs:
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
-          # key: ${{ secrets.EC2_SSH_KEY }}   ← 이렇게 # 붙여서 주석 처리
+          key: ${{ secrets.EC2_SSH_KEY }}   # 이거만 있으면 됨!!
           script: |
             sudo docker pull ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}
-            sudo docker stop leafy-backend || true
-            sudo docker rm leafy-backend || true
-            sudo docker run -d --name leafy-backend -p 8080:8080 ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}
+            sudo docker stop leafy-frontend || true
+            sudo docker rm leafy-frontend || true
+            sudo docker run -d --name leafy-frontend -p 80:80 ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}
