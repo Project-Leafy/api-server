@@ -64,4 +64,7 @@ public class MyPlant extends BaseTimeEntity {
             this.adoptionDate = adoptionDate;
         }
     }
+
+    @OneToMany(mappedBy = "myPlant", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<com.leafy.schedule.domain.Schedule> schedules = new java.util.ArrayList<>();
 }

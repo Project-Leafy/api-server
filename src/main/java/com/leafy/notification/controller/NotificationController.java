@@ -7,6 +7,9 @@ import com.leafy.notification.domain.Notification;
 import com.leafy.notification.repository.NotificationRepository;
 import com.leafy.notification.scheduler.NotificationScheduler;
 import com.leafy.notification.service.KakaoMessageService;
+import com.leafy.notification.service.WeatherService;
+import com.leafy.schedule.domain.Schedule;
+import com.leafy.schedule.repository.ScheduleRepository;
 import com.leafy.user.domain.User;
 import com.leafy.plant.domain.MyPlant;
 import com.leafy.plant.repository.MyPlantRepository;
@@ -16,6 +19,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -31,6 +36,88 @@ public class NotificationController {
     private final KakaoMessageService kakaoMessageService;
     private final NotificationRepository notificationRepository;
     private final MyPlantRepository myPlantRepository;
+
+    private final ScheduleRepository scheduleRepository;
+    private final WeatherService weatherService;
+
+    // ✨ [테스트 API] 일정 등록 완료 알림 강제 발송
+    @Operation(summary = "[테스트] 일정 등록 완료 알림", description = "캘린더에 일정을 추가했을 때 발송될 '등록 완료' 알림을 테스트합니다.")
+    @PostMapping("/test/schedule-create")
+    public ResponseEntity<String> sendScheduleCreateNotificationTest(
+            @RequestParam Long myPlantId,
+            @RequestParam String scheduleType, // WATERING, REPOTTING 등
+            @RequestParam String date // "2023-12-25" (표시용)
+    ) {
+        // 1. 식물 및 유저 정보 조회
+        MyPlant myPlant = myPlantRepository.findById(myPlantId)
+                .orElseThrow(() -> new EntityNotFoundException("식물을 찾을 수 없습니다. ID: " + myPlantId));
+
+        User user = myPlant.getUser();
+        String nickname = myPlant.getNickname();
+
+        // 2. 메시지 구성
+        String typeKorean = convertTypeToKorean(scheduleType); // 영어 타입을 한글로 변환
+        String message = String.format("🌱 [Leafy 일정 등록]\n\n'%s'의 '%s' 일정이 등록되었습니다!\n\n📅 날짜: %s\n\n잊지 않도록 당일에 다시 알려드릴게요! 😉",
+                nickname, typeKorean, date);
+
+        // 3. 카카오톡 전송
+        boolean isSent = kakaoMessageService.sendSelfMessage(user, message);
+
+        if (isSent) {
+            return ResponseEntity.ok("일정 등록 알림 발송 성공!\n내용:\n" + message);
+        } else {
+            return ResponseEntity.status(500).body("카카오 메시지 발송 실패");
+        }
+    }
+
+    // 타입을 한글로 바꿔주는 헬퍼 메서드
+    private String convertTypeToKorean(String type) {
+        if (type == null) return "관리";
+        return switch (type.toUpperCase()) {
+            case "WATER", "WATERING" -> "물주기";
+            case "REPOT", "REPOTTING" -> "분갈이";
+            case "FERTILIZE", "FERTILIZING" -> "비료주기";
+            case "PRUNE", "PRUNING" -> "가지치기";
+            default -> "관리";
+        };
+    }
+
+    @Operation(summary = "[테스트] 오늘 일정 즉시 알림 발송", description = "오늘 날짜의 물주기/분갈이/비료 알림을 바로 발송합니다.")
+    @PostMapping("/send-today-schedule")
+    @Transactional
+    public ResponseEntity<String> sendTodayScheduleTest() {
+        LocalDate today = LocalDate.now();
+        List<Schedule> schedules = scheduleRepository.findAllByNextDueDateAndNotificationStatus(today, "PENDING");
+
+        if (schedules.isEmpty()) {
+            return ResponseEntity.ok("오늘("+ today +")은 보낼 일정이 없습니다.");
+        }
+
+        int successCount = 0;
+        for (Schedule schedule : schedules) {
+            User user = schedule.getMyPlant().getUser();
+            String plantNickname = schedule.getMyPlant().getNickname();
+            String type = schedule.getScheduleType();
+
+            // 날씨 확인 로직
+            boolean isRaining = false;
+            if (user.getLatitude() != null && user.getLongitude() != null) {
+                isRaining = weatherService.willItRainToday(user.getLatitude(), user.getLongitude());
+            }
+
+            // ✅ 누락되었던 메서드 구현 완료
+            String message = createSmartMessage(type, plantNickname, isRaining);
+
+            if (kakaoMessageService.sendSelfMessage(user, message)) {
+                schedule.changeNotificationStatus("SENT");
+                // ✅ 누락되었던 메서드 구현 완료
+                saveNotificationHistory(user, schedule, message, "SCHEDULE_TEST");
+                successCount++;
+            }
+        }
+
+        return ResponseEntity.ok("오늘 일정 알림 발송 완료 ✅ (" + successCount + "건 성공)");
+    }
 
     @Operation(summary = "아침 알림 수동 발송 (테스트용)", description = "스케줄러를 기다리지 않고 즉시 알림 발송 로직을 실행합니다.")
     @PostMapping("/send-morning")
@@ -93,6 +180,26 @@ public class NotificationController {
         }
     }
 
+    // ==========================================
+    // 👇 누락되었던 헬퍼 메서드 추가됨
+    // ==========================================
+
+    private String createSmartMessage(String type, String nickname, boolean isRaining) {
+        String header = isRaining ? "☔ [Leafy 비오는 날 알림]\n\n" : "🌞 [Leafy 맑은 날 알림]\n\n";
+        String body = getRandomSmartTemplate(type, nickname, isRaining);
+        return header + body;
+    }
+
+    private void saveNotificationHistory(User user, Schedule schedule, String message, String type) {
+        notificationRepository.save(Notification.builder()
+                .user(user)
+                .myPlant(schedule.getMyPlant())
+                .notificationType(type)
+                .message(message)
+                .relatedSchedule(schedule)
+                .isRead(false)
+                .build());
+    }
     // --- [테스트용] 템플릿 복사본 (Scheduler와 동일한 로직) ---
     private String getRandomTipTemplate(String nickname, String disease) {
         List<String> templates = new ArrayList<>();
@@ -230,5 +337,4 @@ public class NotificationController {
         if (templates.isEmpty()) return "'" + nickname + "' 관리 알림입니다.";
         return templates.get(new Random().nextInt(templates.size()));
     }
-
 }
