@@ -69,7 +69,7 @@ spring:
           kakao:
             client-id: ${KAKAO_REST_API_KEY}
             client-secret: ${KAKAO_CLIENT_SECRET}
-            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            redirect-uri: http://3.38.12.121/login/oauth2/code/kakao
             authorization-grant-type: authorization_code
             client-authentication-method: client_secret_post
             scope:
@@ -99,6 +99,6 @@ aws:
 # [핵심] 프론트엔드 리다이렉트 주소 설정
 app:
   oauth2:
-    redirect-uri: http://3.38.12.121/login/oauth2/code/kaka
+    redirect-uri: http://3.38.12.121/callback.html
 nongsaro:
   api-key: ${NONGSARO_API_KEY}
