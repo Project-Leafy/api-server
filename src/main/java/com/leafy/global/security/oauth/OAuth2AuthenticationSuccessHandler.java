@@ -1,3 +1,4 @@
+
 package com.leafy.global.security.oauth;
 
 import com.leafy.global.security.jwt.JwtTokenProvider;
@@ -17,7 +18,8 @@ import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepo
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.beans.factory.annotation.Value; // ✨ 1. 이 import가 꼭 있어야 함!
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.util.UriComponentsBuilder; // ✨ 이 줄이 있는지 확인!
 import java.io.IOException;
 
 @Slf4j
