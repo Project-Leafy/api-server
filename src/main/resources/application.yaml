@@ -100,3 +100,5 @@ aws:
 app:
   oauth2:
     redirect-uri: http://3.38.12.121/callback.html
+nongsaro:
+  api-key: ${NONGSARO_API_KEY}
