@@ -116,7 +116,7 @@ public class ScheduleService {
         return switch (frequency) {
             case FREQUENT -> 3;
             case NORMAL -> 7;
-            case RARE -> 14;
+            case INFREQUENT -> 14;
         };
     }
 
