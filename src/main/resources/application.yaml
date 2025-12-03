@@ -100,5 +100,7 @@ aws:
 app:
   oauth2:
     redirect-uri: http://3.38.12.121/callback.html
+    # ✨ [핵심 추가] 최종적으로 토큰을 담아 보낼 프론트엔드 주소 (이전 callback.html의 역할을 수행)
+    front-redirect-url: http://3.38.12.121/callback.html
 nongsaro:
   api-key: ${NONGSARO_API_KEY}
