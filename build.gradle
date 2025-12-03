@@ -78,6 +78,9 @@ dependencies {
     // .env 파일 로더 (DB 비밀번호, AWS 키 등 민감정보 보호)
     implementation 'io.github.cdimascio:java-dotenv:5.1.1'
 
+    // [필수] XML 파싱을 위한 Jackson 확장 라이브러리
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
+
 
     // =================================================================
     // 5. 문서화 & 코드 유틸리티 (Docs & Utils)
