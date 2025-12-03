@@ -1,7 +1,7 @@
 plugins {
-	id 'java'
-	id 'org.springframework.boot' version '3.5.7'
-	id 'io.spring.dependency-management' version '1.1.7'
+    id 'java'
+    id 'org.springframework.boot' version '3.5.7'
+    id 'io.spring.dependency-management' version '1.1.7'
 }
 
 group = 'com.leafy'
@@ -9,19 +9,19 @@ version = '0.0.1-SNAPSHOT'
 description = '반려식물 키우기 앱'
 
 java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(17)
-	}
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
 }
 
 configurations {
-	compileOnly {
-		extendsFrom annotationProcessor
-	}
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
 }
 
 repositories {
-	mavenCentral()
+    mavenCentral()
 }
 
 dependencies {
@@ -78,6 +78,9 @@ dependencies {
     // .env 파일 로더 (DB 비밀번호, AWS 키 등 민감정보 보호)
     implementation 'io.github.cdimascio:java-dotenv:5.1.1'
 
+    // [필수] XML 파싱을 위한 Jackson 확장 라이브러리
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
+
 
     // =================================================================
     // 5. 문서화 & 코드 유틸리티 (Docs & Utils)
@@ -106,5 +109,5 @@ dependencies {
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+    useJUnitPlatform()
 }
