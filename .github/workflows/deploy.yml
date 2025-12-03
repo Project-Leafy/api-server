@@ -63,5 +63,5 @@ jobs:
 
             # 도커 실행
             sudo docker-compose pull backend
-            sudo docker-compose up -d backend
+            sudo docker-compose up -d --force-recreate backend
             sudo docker image prune -f
