@@ -17,7 +17,7 @@ import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepo
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-
+import org.springframework.beans.factory.annotation.Value; // ✨ 1. 이 import가 꼭 있어야 함!
 import java.io.IOException;
 
 @Slf4j
@@ -27,6 +27,10 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
 
     private final JwtTokenProvider jwtTokenProvider;
     private final UserRepository userRepository;
+
+    // ✨ 2. application.yml에서 주소를 가져오는 변수 선언 (이게 빠져 있었음)
+    @Value("${app.oauth2.redirect-uri}")
+    private String redirectUri;
 
     // ✨ [추가] 카카오 토큰 정보가 담긴 'AuthorizedClient'를 가져오기 위한 저장소
     private final OAuth2AuthorizedClientRepository authorizedClientRepository;
@@ -87,7 +91,17 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         System.out.println("=========================================================");
 
         // 프론트엔드 URL로 리다이렉트 (포트 번호 확인: 5500)
-        String redirectUrl = "http://localhost:5500/callback.html#accessToken=" + tokenInfo.getAccessToken();
-        response.sendRedirect(redirectUrl);
+        // ❌ 변경 전 (로컬 테스트용)
+        //String redirectUrl = "http://localhost:5500/callback.html#accessToken=" + tokenInfo.getAccessToken();
+
+        // ✨ 3. 리다이렉트 주소 설정 (yml에서 불러온 redirectUri 사용)
+        String targetUrl = redirectUri + "#accessToken=" + tokenInfo.getAccessToken();
+
+        log.info("🚀 Redirecting to Frontend: {}", targetUrl);
+
+        // 실제로 이동시키는 명령어 (이거 하나면 됨)
+        response.sendRedirect(targetUrl);
+
+
     }
 }

@@ -1,6 +1,10 @@
 # 1. 서버 기본 설정
 server:
   port: 8080
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
 
 # 2. Swagger (SpringDoc) 설정
 springdoc:
@@ -11,90 +15,88 @@ springdoc:
     tags-sorter: alpha
   default-consumes-media-type: application/json;charset=UTF-8
 
-# --- 🔐 JWT (보안 설정 구현 시 사용) ---
+# --- 🔐 JWT 설정 ---
 jwt:
-  secret: ${JWT_SECRET_KEY} # JWT 서명에 사용될 비밀 키 (환경 변수에서 로드)
-  expiration: 86400000 # JWT 토큰 만료 시간 (밀리초 단위, 24시간)
+  secret: ${JWT_SECRET_KEY}
+  expiration: 86400000
 
 # 3. Spring Boot 전체 설정
 spring:
-  # (1) 방금 요청하신 애플리케이션 이름 설정
   application:
     name: leafy
+
+  # ✨ [추가됨] data.sql 실행을 위한 설정
+  sql:
+    init:
+      mode: always      # 항상 실행 (ON CONFLICT 덕분에 안전함)
+      encoding: UTF-8   # 한글 깨짐 방지
+
+  # 파일 업로드 설정
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+
+  # (1) Jackson (JSON) 설정
+  jackson:
+    serialization:
+      fail-on-empty-beans: false
+    property-naming-strategy: SNAKE_CASE
 
   # (2) 데이터베이스(PostgreSQL) & JPA 설정
   datasource:
     driver-class-name: org.postgresql.Driver
-    # .env 파일에서 환경 변수를 읽어오도록 설정
     url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
 
   jpa:
     hibernate:
-      # [중요] 개발 초기: 'update' 또는 'create'
       ddl-auto: update
-    show-sql: true # JPA 실행 SQL 로그
+    show-sql: true
     properties:
       hibernate:
-        format-sql: true # SQL 로그 예쁘게 정렬
+        format-sql: true
         default-batch-fetch-size: 100
     database-platform: org.hibernate.dialect.PostgreSQLDialect
-    open-in-view: false # OSIV 끄기 (권장)
+    open-in-view: false
 
-  # (3) Jackson (JSON) 설정
-  jackson:
-    serialization:
-      fail-on-empty-beans: false
-    property-naming-strategy: SNAKE_CASE # (선택적) JSON 응답 snake_case
-
-  # --- (4) ☁️ AWS S3 (지금 활성화하면 오류 발생!) ---
-  # (S3 Service/Config 구현 전까지 주석 처리)
-  # cloud:
-  #   aws:
-  #     credentials:
-  #       access-key: ${AWS_ACCESS_KEY}
-  #       secret-key: ${AWS_SECRET_KEY}
-  #     region:
-  #       static: ap-northeast-2
-  #     stack:
-  #       auto: false
-
-  # --- OAuth2 Client (소셜 로그인) 설정 ---
+  # --- OAuth2 Client 설정 ---
   security:
     oauth2:
       client:
         registration:
           kakao:
-            client-id: ${KAKAO_REST_API_KEY} # 카카오 REST API 키 (클라이언트 ID)
-            client-secret: ${KAKAO_CLIENT_SECRET} # 카카오 클라이언트 시크릿
-            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}" # OAuth2 리다이렉트 URI 패턴
-            authorization-grant-type: authorization_code # 인가 코드 방식 사용
-            client-authentication-method: client_secret_post # 클라이언트 인증 방식
+            client-id: ${KAKAO_REST_API_KEY}
+            client-secret: ${KAKAO_CLIENT_SECRET}
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            authorization-grant-type: authorization_code
+            client-authentication-method: client_secret_post
             scope:
-              - profile_nickname # 카카오 프로필 닉네임 동의
-              - account_email # 카카오 계정 이메일 동의
+              - profile_nickname
+              - account_email
               - profile_image
-              - talk_message
         provider:
           kakao:
-            authorization-uri: https://kauth.kakao.com/oauth/authorize # 카카오 인가 서버 URI
-            token-uri: https://kauth.kakao.com/oauth/token # 카카오 토큰 서버 URI
-            user-info-uri: https://kapi.kakao.com/v2/user/me # 카카오 사용자 정보 URI
-            user-name-attribute: id # 사용자 정보에서 사용자 이름을 식별할 속성 (카카오의 경우 'id')
-# --- 🌐 외부 API (WebClient/DiagnosisService 구현 시 사용) ---
-# (커스텀 설정이므로 주석 처리해도 무방)
-# Plant.id API 설정
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
+
+# --- 외부 API 설정 ---
 plant:
   id:
-    # .env 파일 또는 환경 변수의 PLANT_ID_API_KEY 값을 가져옴
     api-key: ${PLANT_ID_API_KEY}
     base-url: https://plant.id/api/v3
 
-# --- ☁️ AWS S3/CloudFront 커스텀 설정 (신규 추가) ---
 cloudfront:
   url: ${CLOUDFRONT_URL}
 
 aws:
   s3:
     bucket-name: ${S3_BUCKET_NAME}
+
+# [핵심] 프론트엔드 리다이렉트 주소 설정
+app:
+  oauth2:
+    redirect-uri: http://3.38.12.121/callback.html
