@@ -95,7 +95,11 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         //String redirectUrl = "http://localhost:5500/callback.html#accessToken=" + tokenInfo.getAccessToken();
 
         // ✨ 3. 리다이렉트 주소 설정 (yml에서 불러온 redirectUri 사용)
-        String targetUrl = redirectUri + "#accessToken=" + tokenInfo.getAccessToken();
+        String targetUrl = UriComponentsBuilder
+                .fromUriString(redirectUri)
+                .queryParam("accessToken", tokenInfo.getAccessToken())
+                .build()
+                .toUriString();
 
         log.info("🚀 Redirecting to Frontend: {}", targetUrl);
 
