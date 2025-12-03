@@ -18,6 +18,7 @@ import com.leafy.diagnosis.repository.DiagnosisHistoryRepository;
 import com.leafy.plant.domain.MyPlant;
 import com.leafy.plant.repository.MyPlantRepository;
 import java.time.temporal.ChronoUnit;
+import com.leafy.notification.service.WeatherService;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -32,14 +33,15 @@ public class NotificationScheduler {
     private final NotificationRepository notificationRepository;
     private final DiagnosisHistoryRepository diagnosisHistoryRepository;
     private final MyPlantRepository myPlantRepository;
+    private final WeatherService weatherService;
 
+    // [스마트] 아침 관리 알림 (물주기, 분갈이, 비료)
     @Scheduled(cron = "0 0 8 * * *", zone = "Asia/Seoul")
     @Transactional
     public void sendMorningNotifications() {
         LocalDate today = LocalDate.now();
-        log.info("[Scheduler] {} 아침 알림 발송 시작...", today);
+        log.info("[Scheduler] {} 스마트 아침 알림 발송 시작...", today);
 
-        // 오늘 예정된 모든 'PENDING' 스케줄 조회 (타입 구분 없이 다 가져옴)
         List<Schedule> schedules = scheduleRepository.findAllByNextDueDateAndNotificationStatus(today, "PENDING");
 
         if (schedules.isEmpty()) {
@@ -52,23 +54,101 @@ public class NotificationScheduler {
         for (Schedule schedule : schedules) {
             User user = schedule.getMyPlant().getUser();
             String plantNickname = schedule.getMyPlant().getNickname();
-            String type = schedule.getScheduleType(); // 일정 타입 (WATERING, etc.)
+            String type = schedule.getScheduleType();
 
-            // 1. 타입별 메시지 생성
-            String message = createMessageByType(type, plantNickname);
+            // 1. 날씨 확인 (사용자 위치 기반)
+            boolean isRaining = false;
+            if (user.getLatitude() != null && user.getLongitude() != null) {
+                isRaining = weatherService.willItRainToday(user.getLatitude(), user.getLongitude());
+            }
 
-            // 2. 카카오톡 전송
-            boolean isSent = kakaoMessageService.sendSelfMessage(user, message);
+            // 2. 스마트 메시지 생성 (날씨 + 일정 타입 고려)
+            String message = createSmartMessage(type, plantNickname, isRaining);
 
-            if (isSent) {
+            // 3. 발송
+            if (kakaoMessageService.sendSelfMessage(user, message)) {
                 schedule.changeNotificationStatus("SENT");
-                saveNotificationHistory(user, schedule, message, type);
+                saveNotificationHistory(user, schedule, message, type); // 오버로딩된 메서드 사용
                 successCount++;
-            } else {
-                log.warn("알림 발송 실패. ScheduleID: {}, User: {}", schedule.getScheduleId(), user.getEmail());
             }
         }
-        log.info("[Scheduler] 알림 발송 완료. 대상: {}건, 성공: {}건", schedules.size(), successCount);
+        log.info("[Scheduler] 알림 발송 완료. 성공: {}건", successCount);
+    }
+    // 🎲 [New] 스마트 알림 메시지 생성기
+    private String createSmartMessage(String type, String nickname, boolean isRaining) {
+        String header = isRaining ? "☔ [Leafy 비오는 날 알림]\n\n" : "🌞 [Leafy 맑은 날 알림]\n\n";
+        String body = getRandomSmartTemplate(type, nickname, isRaining);
+        return header + body;
+    }
+
+    private String getRandomSmartTemplate(String type, String nickname, boolean isRaining) {
+        List<String> templates = new ArrayList<>();
+
+        switch (type) {
+            case "WATERING" -> {
+                if (isRaining) { // 비 오는 날 물주기 멘트 (습도 고려)
+                    templates.add("비가 와서 습도가 높아요. '" + nickname + "' 물주기를 하루 미루는 건 어떨까요?");
+                    templates.add("오늘같이 비 오는 날엔 과습 주의! 💧 흙이 바짝 말랐는지 꼭 확인하세요.");
+                    templates.add("창밖엔 비가 주룩주룩. '" + nickname + "'도 공기 중의 수분을 즐기고 있을 거예요.");
+                    templates.add("습한 날씨엔 물주기에 신중해야 해요. 겉흙뿐만 아니라 속흙까지 확인해 주세요!");
+                    templates.add("비 오는 날의 물주기는 보약보다 독이 될 수도 있어요. 상태를 보고 결정하세요. 🤔");
+                    templates.add("축축한 날씨네요. '" + nickname + "' 통풍에 더 신경 써주세요! 🌬️");
+                    templates.add("혹시 베란다 문이 닫혀있나요? 물주기보다 환기가 더 중요한 날입니다.");
+                    templates.add("하늘이 물을 주는 날이네요. 실내 식물들은 조금 더 건조하게 관리해도 좋아요.");
+                    templates.add("습도가 빵빵해요! '" + nickname + "'에게 물 대신 사랑의 눈빛만 주는 건 어때요? 👀");
+                    templates.add("비 소식이 있어요. 오늘 물주기는 건너뛰고 내일 맑을 때 주는 것도 방법이에요!");
+                } else { // 맑은 날 물주기 멘트
+                    templates.add("햇살 좋은 오늘, '" + nickname + "'에게 시원한 물 한 잔 어떠세요? 💧");
+                    templates.add("오늘은 물 주는 날! 화분 밑으로 물이 나올 때까지 흠뻑 주세요.");
+                    templates.add("'" + nickname + "'가 목말라하고 있어요. 흙 상태 확인 후 물을 챙겨주세요.");
+                    templates.add("맑은 날엔 광합성도 활발해요! 물과 햇빛으로 에너지를 채워주세요. ☀️");
+                    templates.add("똑똑! '" + nickname + "' 물주기 알람입니다. 잊지 말고 챙겨주실 거죠?");
+                    templates.add("식물도 물 마실 시간! 잎에 분무도 같이 해주면 더 좋아할 거예요. 🌿");
+                    templates.add("오늘의 할 일: '" + nickname + "' 물 주기 완료하고 상쾌한 하루 시작하기!");
+                    templates.add("흙이 마르기 딱 좋은 날씨네요. 수분 보충 타임입니다!");
+                    templates.add("싱그러운 아침, '" + nickname + "'와 함께 물 주기 명상 어떠세요? 🧘");
+                    templates.add("미루지 마세요! 오늘 물을 줘야 '" + nickname + "'가 쑥쑥 자라요.");
+                }
+            }
+            case "REPOTTING" -> {
+                if (isRaining) {
+                    templates.add("비가 오네요. 분갈이하기엔 흙이 잘 안 마를 수 있어요. 맑은 날을 기다려볼까요?");
+                    templates.add("습한 날 분갈이는 뿌리에 무리를 줄 수 있어요. 오늘은 화분 정리만 해보세요. 🧹");
+                    templates.add("'" + nickname + "'의 새 집 이사, 비 그치고 화창한 날에 하는 걸 추천해요!");
+                    templates.add("오늘 같은 날은 분갈이 계획만 세우고, 실행은 다음으로 미루는 게 좋아요.");
+                    templates.add("분갈이 대신 잎의 먼지를 닦아주며 교감하는 시간을 가져보세요. ✨");
+                } else {
+                    templates.add("화창한 오늘이 바로 D-Day! '" + nickname + "'에게 더 넓은 집을 선물하세요. 🏠");
+                    templates.add("뿌리가 답답해 보여요. 오늘 분갈이해주면 폭풍 성장할 거예요!");
+                    templates.add("새 흙과 새 화분으로 기분 전환! '" + nickname + "' 분갈이 도전?");
+                    templates.add("날씨가 너무 좋아요. 베란다에서 흙 만지며 힐링하는 분갈이 타임 어때요?");
+                    templates.add("'" + nickname + "'가 쑥쑥 자랐네요. 이제 더 큰 화분으로 이사 갈 시간입니다!");
+                    templates.add("분갈이 후 물 듬뿍 주고 통풍 잘 되는 곳에 두기, 잊지 마세요!");
+                    templates.add("오늘 분갈이하면 뿌리 활착이 아주 잘 될 거예요. 화이팅! 💪");
+                }
+            }
+            case "FERTILIZING" -> {
+                // 비료는 날씨 영향을 덜 받지만, 흐린 날보단 맑은 날(광합성 활발)이 흡수에 좋음
+                if (isRaining) {
+                    templates.add("비 오는 날엔 영양제 흡수가 더딜 수 있어요. 날이 개면 주는 게 더 좋아요! 🌤️");
+                    templates.add("'" + nickname + "'에게 영양제를 줄 시기지만, 오늘은 해가 없어서 조금 아쉽네요.");
+                    templates.add("비료보다는 환기가 더 필요한 날씨! 영양제는 맑은 날 선물해 주세요.");
+                    templates.add("오늘 영양제를 주신다면 농도를 조금 묽게 해서 주는 건 어떨까요?");
+                } else {
+                    templates.add("햇빛 가득한 오늘, 영양제까지 더해지면 '" + nickname + "'는 천하무적! 💪");
+                    templates.add("보약 한 첩 지어왔어요~ 💊 '" + nickname + "'에게 영양제를 줄 시간입니다.");
+                    templates.add("쑥쑥 크는 게 보여요. 성장을 돕기 위해 비료를 챙겨주세요.");
+                    templates.add("광합성 뿜뿜하는 오늘! 비료 흡수율도 최고일 거예요. 🌱");
+                    templates.add("'" + nickname + "' 잎의 색이 더 진해지도록, 맛있는 영양분을 공급해 주세요!");
+                    templates.add("식물도 밥심! 알비료나 액체비료로 에너지를 충전해 주세요.");
+                }
+            }
+            default -> templates.add("'" + nickname + "' 관리 알림이 있습니다. 앱에서 확인해 주세요!");
+        }
+
+        // 템플릿이 비어있지 않으면 랜덤 반환, 비어있으면 기본값
+        if (templates.isEmpty()) return "'" + nickname + "' 관리 알림입니다.";
+        return templates.get(new Random().nextInt(templates.size()));
     }
 
     /**
@@ -96,21 +176,6 @@ public class NotificationScheduler {
         for (DiagnosisHistory history : checkTargets) {
             sendCheckRequestNotification(history);
         }
-    }
-
-    // 기본 3종 알림 발송 로직
-    private String createMessageByType(String type, String nickname) {
-        String header = "🌱 [Leafy 알림]\n\n";
-
-        return switch (type) {
-            case "WATERING" -> String.format(header + "오늘은 '%s' 물 주는 날이에요! 💧\n흙 상태를 꼼꼼히 확인하고 물을 주세요.", nickname);
-
-            case "REPOTTING" -> String.format(header + "'%s'와(과) 함께한 지 꽤 되었네요! 🪴\n화분이 작아 보인다면 분갈이를 고려해 보세요.", nickname);
-
-            case "FERTILIZING" -> String.format(header + "'%s'에게 영양제를 줄 시기입니다. 💊\n쑥쑥 자라도록 영양을 챙겨주세요!", nickname);
-
-            default -> String.format(header + "'%s' 관리 알림이 있습니다.", nickname);
-        };
     }
 
     // 1. [D+2] 관리 팁 발송 로직 (수정됨: 랜덤 템플릿 적용)

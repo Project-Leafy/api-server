@@ -1,6 +1,7 @@
 package com.leafy.plant.controller;
 
 import com.leafy.plant.dto.MyPlantResponseDto;
+import com.leafy.plant.dto.PlantDetailResponseDto;
 import com.leafy.plant.service.MyPlantService;
 import com.leafy.user.domain.User;
 import com.leafy.user.repository.UserRepository;
@@ -21,6 +22,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.List;
+import java.util.Map;
 
 @Tag(name = "My Plant", description = "내 반려식물 관리 API")
 @RestController
@@ -71,5 +73,35 @@ public class MyPlantController {
         User user = getAuthenticatedUser(userDetails);
         myPlantService.delete(plantId, user);
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "반려식물 상세 조회", description = "특정 반려식물의 상세 정보(관리 팁, 적정 온도 등 포함)를 조회합니다.")
+    @GetMapping("/{plantId}")
+    public ResponseEntity<PlantDetailResponseDto> getMyPlantDetail(@PathVariable Long plantId) {
+        // 81 라인의 변수 선언부도 변경해야 한다 이다.
+        PlantDetailResponseDto response = myPlantService.getMyPlantDetail(plantId);
+        return ResponseEntity.ok(response);
+    }
+
+    // ✅ 새로 추가: 반려식물 정보 업데이트
+    @Operation(summary = "반려식물 정보 수정", description = "반려식물의 닉네임 또는 입양일을 수정합니다.")
+    @PatchMapping("/{plantId}")
+    public ResponseEntity<?> updateMyPlant(
+            @PathVariable Long plantId,
+            @RequestBody Map<String, Object> updates,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        try {
+            User user = getAuthenticatedUser(userDetails);
+            MyPlantResponseDto response = myPlantService.updateMyPlant(plantId, updates, user);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("업데이트 실패: " + e.getMessage());
+        }
     }
 }

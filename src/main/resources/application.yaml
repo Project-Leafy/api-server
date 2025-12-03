@@ -10,7 +10,6 @@ springdoc:
     path: /swagger-ui.html
     tags-sorter: alpha
   default-consumes-media-type: application/json;charset=UTF-8
-  default-produces-media-type: application/json;charset=UTF-8
 
 # --- 🔐 JWT (보안 설정 구현 시 사용) ---
 jwt:
@@ -99,3 +98,6 @@ cloudfront:
 aws:
   s3:
     bucket-name: ${S3_BUCKET_NAME}
+
+nongsaro:
+  api-key: ${NONGSARO_API_KEY}

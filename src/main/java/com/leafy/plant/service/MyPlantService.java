@@ -1,5 +1,10 @@
 package com.leafy.plant.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper; // ✅ 추가
+import com.leafy.diagnosis.repository.DiagnosisHistoryRepository;
+import com.leafy.plant.dto.PlantDetailResponseDto; // ✅ 추가 (반환 타입 변경)
+import com.leafy.diagnosis.domain.DiagnosisHistory; // ✅ 추가 (Optional 사용)
+import lombok.extern.slf4j.Slf4j; // ✅ 추가
 import com.leafy.plant.dto.MyPlantResponseDto;
 import com.leafy.plant.repository.MyPlantRepository;
 import com.leafy.user.domain.User;
@@ -15,8 +20,11 @@ import java.time.LocalDate;
 import com.leafy.schedule.service.ScheduleService;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Slf4j // ✅ 추가
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -25,6 +33,8 @@ public class MyPlantService {
     private final MyPlantRepository myPlantRepository;
     private final PlantSpeciesRepository plantSpeciesRepository;
     private final ScheduleService scheduleService;
+    private final DiagnosisHistoryRepository diagnosisHistoryRepository; // ✅ 주입
+    private final ObjectMapper objectMapper; // ✅ 주입
 
     public List<MyPlantResponseDto> findMyPlants(User user) {
         return myPlantRepository.findAllByUserOrderByCreatedAtDesc(user).stream()
@@ -43,6 +53,7 @@ public class MyPlantService {
         // 2. 입양일 설정 (입력 없으면 오늘 날짜)
         LocalDate adoptionDate = request.adoptionDate() != null ? request.adoptionDate() : LocalDate.now();
 
+
         // 3. 내 식물(MyPlant) 객체 생성
         MyPlant myPlant = MyPlant.builder()
                 .user(user)
@@ -50,6 +61,7 @@ public class MyPlantService {
                 .nickname(request.nickname())
                 .imageUrl(request.imageUrl())
                 .adoptionDate(adoptionDate)
+                .identificationResult(request.identificationResult()) // ✅ 추가: 식별 결과 JSON 저장
                 .build();
 
         // 4. DB 저장
@@ -76,4 +88,60 @@ public class MyPlantService {
 
         myPlantRepository.delete(myPlant);
     }
+
+    /**
+     * 식물 상세 조회
+     * 반환 타입: MyPlantResponseDto -> PlantDetailResponseDto로 변경
+     */
+    public PlantDetailResponseDto getMyPlantDetail(Long plantId) {
+        // 1. MyPlant 조회
+        MyPlant myPlant = myPlantRepository.findById(plantId)
+                .orElseThrow(() -> new EntityNotFoundException("해당 식물을 찾을 수 없습니다. ID: " + plantId));
+
+        // 2. 최신 진단 기록 조회
+        Optional<DiagnosisHistory> latestHistory = diagnosisHistoryRepository
+                .findTopByMyPlantOrderByDiagnosisDatetimeDesc(myPlant);
+
+        // 3. PlantDetailResponseDto의 팩토리 메서드를 사용하여 모든 정보를 취합 후 반환
+        // JSON 파싱 및 최종 DTO 조립은 PlantDetailResponseDto.of()에서 처리된다 이다.
+        return PlantDetailResponseDto.of(myPlant, latestHistory, objectMapper); // ✅ DTO 반환
+    }
+
+    // ✅ 새로 추가: 식물 정보 업데이트
+    /**
+     * 식물 정보 업데이트 (닉네임, 입양일)
+     */
+    @Transactional
+    public MyPlantResponseDto updateMyPlant(Long plantId, Map<String, Object> updates, User user) {
+        // 1. MyPlant 조회
+        MyPlant myPlant = myPlantRepository.findById(plantId)
+                .orElseThrow(() -> new EntityNotFoundException("식물을 찾을 수 없습니다. ID: " + plantId));
+
+        // 2. 권한 체크 (본인의 식물인지 확인)
+        if (!myPlant.getUser().getUserId().equals(user.getUserId())) {
+            throw new IllegalArgumentException("권한이 없습니다.");
+        }
+
+        // 3. 닉네임 업데이트
+        if (updates.containsKey("nickname")) {
+            String nickname = (String) updates.get("nickname");
+            myPlant.updateNickname(nickname);
+            log.info("식물 ID {} 닉네임 업데이트: {}", plantId, nickname);
+        }
+
+        // 4. 입양일 업데이트
+        if (updates.containsKey("adoptionDate")) {
+            String dateStr = (String) updates.get("adoptionDate");
+            LocalDate adoptionDate = LocalDate.parse(dateStr);
+            myPlant.updateAdoptionDate(adoptionDate);
+            log.info("식물 ID {} 입양일 업데이트: {}", plantId, adoptionDate);
+        }
+
+        // 5. 저장 (더티 체킹으로 자동 업데이트되지만 명시적으로 save 호출)
+        MyPlant savedMyPlant = myPlantRepository.save(myPlant);
+
+        // 6. DTO로 변환하여 반환
+        return MyPlantResponseDto.from(savedMyPlant);
+    }
+
 }

@@ -55,7 +55,7 @@ public class ScheduleService {
         return switch (frequency) {
             case FREQUENT -> 3;  // 자주 (3일)
             case NORMAL -> 7;    // 보통 (7일)
-            case RARE -> 14;     // 가끔 (14일)
+            case INFREQUENT -> 14;     // 가끔 (14일)
         };
     }
 }

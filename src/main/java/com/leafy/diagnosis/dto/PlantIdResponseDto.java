@@ -52,15 +52,24 @@ public record PlantIdResponseDto(
             @JsonProperty("url_small") String urlSmall
     ) {}
 
+    // 🔴 [수정됨] Details 레코드
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Details(
             String language,
             @JsonProperty("entity_id") String entityId,
             @JsonProperty("common_names") List<String> commonNames,
             String url,
-            String description,
-            // (쿼리 파라미터로 diseaseDetails 요청 시) 건강 진단 상세 정보
+            Description description, // 👈 String에서 Description 객체로 변경!
             DiseaseDetails diseaseDetails
+    ) {}
+
+    // 🟢 [추가됨] Description 레코드 (API의 설명 객체를 받기 위함)
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record Description(
+            String value, // 실제 설명 텍스트
+            String citation,
+            @JsonProperty("license_name") String licenseName,
+            @JsonProperty("license_url") String licenseUrl
     ) {}
 
     // --- (DiagnosisHistory 엔티티에 맞게 상세화된 부분) ---
