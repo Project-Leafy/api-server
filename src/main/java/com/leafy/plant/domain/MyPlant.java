@@ -65,6 +65,7 @@ public class MyPlant extends BaseTimeEntity {
         }
     }
 
+    @Builder.Default // ✨ 이 어노테이션을 꼭 붙여야 리스트가 null이 안 된다.
     @OneToMany(mappedBy = "myPlant", cascade = CascadeType.ALL, orphanRemoval = true)
     private java.util.List<com.leafy.schedule.domain.Schedule> schedules = new java.util.ArrayList<>();
 }
