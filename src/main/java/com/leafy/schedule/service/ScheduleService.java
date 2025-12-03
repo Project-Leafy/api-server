@@ -1,14 +1,23 @@
 package com.leafy.schedule.service;
 
-import com.leafy.global.type.WaterFrequency; // Enum import 필수
+import com.leafy.global.type.WaterFrequency;
+import com.leafy.notification.service.KakaoMessageService; // [1] 임포트 추가
 import com.leafy.plant.domain.MyPlant;
+import com.leafy.plant.repository.MyPlantRepository;
 import com.leafy.schedule.domain.Schedule;
+import com.leafy.schedule.dto.ScheduleRequest;
+import com.leafy.schedule.dto.ScheduleResponse;
 import com.leafy.schedule.repository.ScheduleRepository;
+import com.leafy.user.domain.User;
+import com.leafy.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -16,46 +25,110 @@ import java.time.LocalDate;
 public class ScheduleService {
 
     private final ScheduleRepository scheduleRepository;
+    private final MyPlantRepository myPlantRepository;
+    private final UserRepository userRepository;
 
-    /**
-     * 식물 등록 시 3종 관리 스케줄(물주기, 분갈이, 비료) 자동 생성
-     */
-    public void createInitialSchedule(MyPlant myPlant) {
-        // 1. 물주기 스케줄 (기존 로직)
-        WaterFrequency frequencyEnum = myPlant.getPlantSpecies().getWateringFrequency();
-        int waterDays = convertFrequencyToDays(frequencyEnum);
-        saveSchedule(myPlant, "WATERING", waterDays);
+    // [2] 알림 서비스를 사용하기 위해 추가
+    private final KakaoMessageService kakaoMessageService;
 
-        // 2. 분갈이 스케줄 (기본 1년)
-        // 추후 식물 크기나 성장 속도에 따라 조정 가능
-        saveSchedule(myPlant, "REPOTTING", 365);
+    // --- [1] 캘린더용: 내 전체 스케줄 조회 ---
+    @Transactional(readOnly = true)
+    public List<ScheduleResponse> getMySchedules() {
+        String principalName = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userRepository.findByEmail(principalName)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // 3. 비료/영양제 스케줄 (기본 30일)
-        // 겨울철(휴면기) 등은 추후 날짜 계산 로직에서 제외 가능
-        saveSchedule(myPlant, "FERTILIZING", 30);
+        Long userId = currentUser.getUserId();
+
+        return scheduleRepository.findAllByUserId(userId).stream()
+                .map(ScheduleResponse::new)
+                .collect(Collectors.toList());
     }
 
-    // 스케줄 저장 헬퍼 메서드
+    // --- [2] 캘린더용: 일정 수동 추가 + 알림 발송 ---
+    public Long addSchedule(ScheduleRequest request) {
+        // 1. 사용자 조회
+        String principalName = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userRepository.findByEmail(principalName)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Long userId = currentUser.getUserId();
+
+        // 2. 식물 찾기
+        MyPlant myPlant = myPlantRepository.findById(request.getPlantId())
+                .orElseThrow(() -> new IllegalArgumentException("식물을 찾을 수 없습니다."));
+
+        // 3. 본인 식물인지 확인
+        if (!myPlant.getUser().getUserId().equals(userId)) {
+            throw new IllegalArgumentException("본인의 식물에만 일정을 추가할 수 있습니다.");
+        }
+
+        // 4. 스케줄 생성 및 저장
+        Schedule schedule = Schedule.builder()
+                .myPlant(myPlant)
+                .scheduleType(request.getScheduleType())
+                .nextDueDate(request.getNextDueDate())
+                .frequencyDays(null)
+                .notificationStatus("PENDING")
+                .build();
+
+        Schedule savedSchedule = scheduleRepository.save(schedule);
+
+        // [3] ✨ 알림 발송 로직 추가됨
+        try {
+            String typeKorean = convertTypeToKorean(request.getScheduleType());
+            String message = String.format("✅ [Leafy 일정 등록]\n\n'%s'의 '%s' 일정이 등록되었습니다!\n\n📅 날짜: %s",
+                    myPlant.getNickname(), typeKorean, request.getNextDueDate());
+
+            kakaoMessageService.sendSelfMessage(currentUser, message);
+        } catch (Exception e) {
+            // 알림 발송 실패가 일정 저장 자체를 막으면 안 되므로 로그만 찍고 넘어감
+            System.err.println("알림 발송 실패: " + e.getMessage());
+        }
+
+        return savedSchedule.getScheduleId();
+    }
+
+    // --- [3] (기존 기능 유지) 식물 등록 시 자동 스케줄 생성 ---
+    public void createInitialSchedule(MyPlant myPlant) {
+        WaterFrequency frequencyEnum = myPlant.getPlantSpecies().getWateringFrequency();
+        int waterDays = convertFrequencyToDays(frequencyEnum);
+        saveSchedule(myPlant, "WATER", waterDays);
+
+        saveSchedule(myPlant, "REPOT", 365);
+        saveSchedule(myPlant, "FERTILIZE", 30);
+    }
+
     private void saveSchedule(MyPlant myPlant, String type, int frequencyDays) {
         Schedule schedule = Schedule.builder()
                 .myPlant(myPlant)
-                .scheduleType(type) // WATERING, REPOTTING, FERTILIZING
+                .scheduleType(type)
                 .frequencyDays(frequencyDays)
-                .nextDueDate(LocalDate.now().plusDays(frequencyDays)) // 오늘 + 주기 = 예정일
+                .nextDueDate(LocalDate.now().plusDays(frequencyDays))
                 .notificationStatus("PENDING")
                 .build();
 
         scheduleRepository.save(schedule);
     }
 
-    // [수정] 파라미터를 String -> WaterFrequency Enum으로 변경
     private int convertFrequencyToDays(WaterFrequency frequency) {
-        if (frequency == null) return 7; // 기본값
-
+        if (frequency == null) return 7;
         return switch (frequency) {
-            case FREQUENT -> 3;  // 자주 (3일)
-            case NORMAL -> 7;    // 보통 (7일)
-            case RARE -> 14;     // 가끔 (14일)
+            case FREQUENT -> 3;
+            case NORMAL -> 7;
+            case RARE -> 14;
+        };
+    }
+
+    // [4] 타입을 한글로 예쁘게 바꿔주는 헬퍼 메서드
+    private String convertTypeToKorean(String type) {
+        if (type == null) return "관리";
+        return switch (type.toUpperCase()) {
+            case "WATER", "WATERING" -> "물주기";
+            case "REPOT", "REPOTTING" -> "분갈이";
+            case "FERTILIZE", "FERTILIZING" -> "비료주기";
+            case "PRUNE", "PRUNING" -> "가지치기";
+            default -> "관리";
         };
     }
 }
