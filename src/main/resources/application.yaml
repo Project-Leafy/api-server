@@ -1,6 +1,6 @@
 # 1. 서버 기본 설정
 server:
-  port: 8080
+  port: 80
   servlet:
     encoding:
       charset: UTF-8
