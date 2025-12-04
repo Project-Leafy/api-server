@@ -1,6 +1,6 @@
 # 1. 서버 기본 설정
 server:
-  port: 80
+  port: 8080 # 👈 [수정 1] 80번은 Nginx 꺼다. 스프링은 8080을 써야 한다.
   servlet:
     encoding:
       charset: UTF-8
@@ -98,6 +98,8 @@ aws:
 
 # [핵심] 프론트엔드 리다이렉트 주소 설정
 app:
-  frontend-url: http://3.38.12.121/app/main/main.html   # ← 이 줄만 추가 (없으면 새로 써줘)
+  # 👈 [수정 3] Nginx(80번)가 제공하는 callback.html로 보내야 한다.
+  # 여기는 :8080을 붙이면 안 된다! 사용자가 보는 화면이기 때문이다.
+  frontend-url: http://3.38.12.121/callback.html
 nongsaro:
   api-key: ${NONGSARO_API_KEY}
