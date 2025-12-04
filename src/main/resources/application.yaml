@@ -69,7 +69,8 @@ spring:
           kakao:
             client-id: ${KAKAO_REST_API_KEY}
             client-secret: ${KAKAO_CLIENT_SECRET}
-            redirect-uri: http://3.38.12.121/login/oauth2/code/kakao
+            # 🚨 [수정 필수] 여기 8080이 빠졌다! 백엔드가 직접 받아야 한다.
+            redirect-uri: http://3.38.12.121:8080/login/oauth2/code/kakao
             authorization-grant-type: authorization_code
             client-authentication-method: client_secret_post
             scope:
