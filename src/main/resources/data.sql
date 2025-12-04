@@ -29,7 +29,7 @@ INSERT INTO plant_species (
     is_verified_by_admin, created_at, updated_at
 ) VALUES (
     102, 'Sansevieria Cylindrica', '스투키', '백합과', '산세베리아속',
-    'RARE', 'LOW', 'EASY', 'SMALL',
+    'INFREQUENT', 'LOW', 'EASY', 'SMALL',
     false, '18~27°C',
     '물을 너무 자주 주면 뿌리가 썩을 수 있습니다. 흙이 바짝 말랐을 때, 혹은 한 달에 한 번 정도만 물을 주세요. 전자파 차단과 공기 정화 능력이 뛰어난 식물입니다.',
     '반려동물이 섭취할 경우 가벼운 배탈을 일으킬 수 있습니다.',
