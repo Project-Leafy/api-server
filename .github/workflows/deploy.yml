@@ -68,6 +68,9 @@ jobs:
             echo "PLANT_ID_API_KEY=${{ secrets.PLANT_ID_API_KEY }}" >> .env
             echo "JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}" >> .env
             echo "NONGSARO_API_KEY=${{ secrets.NONGSARO_API_KEY }}" >> .env
+            echo "OPEN_WEATHER_API_KEY=${{ secrets.OPEN_WEATHER_API_KEY }}" >> .env
+            echo "PERENUAL_API_KEY=${{ secrets.PERENUAL_API_KEY }}" >> .env
+            echo "AIR_API_KEY=${{ secrets.AIR_API_KEY }}" >> .env
 
             # 도커 실행
             sudo docker-compose pull backend
