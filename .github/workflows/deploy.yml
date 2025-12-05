@@ -16,6 +16,13 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
+          
+      - name: Generate Image Tag
+        id: image_tag
+        run: |
+          # 리눅스 시간대를 서울로 설정 후 포맷팅
+          sudo timedatectl set-timezone Asia/Seoul
+          echo "TAG=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
@@ -39,7 +46,9 @@ jobs:
         with:
           context: .
           push: 'true'
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/leafy-backend:latest
+          tags: 
+            ${{ secrets.DOCKERHUB_USERNAME }}/leafy-backend:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/leafy-backend:${{ env.TAG }}
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
