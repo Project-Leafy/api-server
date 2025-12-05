@@ -1,12 +1,17 @@
-# 1. 서버 기본 설정
+# 1. Spring Profile 설정 (로컬에서는 dev, 배포 시에는 prod 사용)
+spring:
+  profiles:
+    active: dev # 로컬에서 실행 시 기본적으로 dev 프로필 활성화
+
+# 2. 서버 기본 설정
 server:
-  port: 8080 # 👈 [수정 1] 80번은 Nginx 꺼다. 스프링은 8080을 써야 한다.
+  port: 8080
   servlet:
     encoding:
       charset: UTF-8
       force: true
 
-# 2. Swagger (SpringDoc) 설정
+# 3. Swagger (SpringDoc) 설정
 springdoc:
   api-docs:
     path: /api-docs
@@ -17,15 +22,14 @@ springdoc:
 
 # --- 🔐 JWT 설정 ---
 jwt:
-  secret: ${JWT_SECRET_KEY}
-  expiration: 86400000
+  expiration: 86400000 # 토큰 만료 시간은 공통으로 사용
 
-# 3. Spring Boot 전체 설정
+# 4. Spring Boot 전체 설정
 spring:
   application:
     name: leafy
 
-  # ✨ [추가됨] data.sql 실행을 위한 설정
+  # ✨ data.sql 실행을 위한 설정
   sql:
     init:
       mode: always      # 항상 실행 (ON CONFLICT 덕분에 안전함)
@@ -43,16 +47,10 @@ spring:
       fail-on-empty-beans: false
     property-naming-strategy: SNAKE_CASE
 
-  # (2) 데이터베이스(PostgreSQL) & JPA 설정
+  # (2) 데이터베이스(PostgreSQL) & JPA 공통 설정
   datasource:
-    driver-class-name: org.postgresql.Driver
-    url: ${DB_URL}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
-
+    driver-class-name: org.postgresql.Driver # 드라이버 클래스 이름은 공통
   jpa:
-    hibernate:
-      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
@@ -61,46 +59,31 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     open-in-view: false
 
-  # --- OAuth2 Client 설정 ---
+  # --- OAuth2 Client 공통 설정 ---
   security:
     oauth2:
       client:
-        registration:
-          kakao:
-            client-id: ${KAKAO_REST_API_KEY}
-            client-secret: ${KAKAO_CLIENT_SECRET}
-            # 🚨 [수정 필수] 여기 8080이 빠졌다! 백엔드가 직접 받아야 한다.
-            redirect-uri: http://3.38.12.121:8080/login/oauth2/code/kakao
-            authorization-grant-type: authorization_code
-            client-authentication-method: client_secret_post
-            scope:
-              - profile_nickname
-              - account_email
-              - profile_image
-        provider:
+        provider: # Provider 정보는 공통
           kakao:
             authorization-uri: https://kauth.kakao.com/oauth/authorize
             token-uri: https://kauth.kakao.com/oauth/token
             user-info-uri: https://kapi.kakao.com/v2/user/me
             user-name-attribute: id
 
-# --- 외부 API 설정 ---
+# --- 외부 API 공통 설정 ---
 plant:
   id:
-    api-key: ${PLANT_ID_API_KEY}
-    base-url: https://plant.id/api/v3
-
-cloudfront:
-  url: ${CLOUDFRONT_URL}
-
-aws:
-  s3:
-    bucket-name: ${S3_BUCKET_NAME}
-
-# [핵심] 프론트엔드 리다이렉트 주소 설정
-app:
-  # 👈 [수정 3] Nginx(80번)가 제공하는 callback.html로 보내야 한다.
-  # 여기는 :8080을 붙이면 안 된다! 사용자가 보는 화면이기 때문이다.
-  frontend-url: http://3.38.12.121/callback.html
-nongsaro:
-  api-key: ${NONGSARO_API_KEY}
+    base-url: https://plant.id/api/v3 # API 기본 URL은 공통
+kma:
+  api:
+    url: http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst # 기상청 API URL
+nongsaro: # Nongsaro API 설정 추가
+  api:
+    base-url: http://api.nongsaro.go.kr/service/garden/gardenList
+    detail-url: http://api.nongsaro.go.kr/service/garden/gardenDtl
+    image-base-url: http://www.nongsaro.go.kr/cms_contents/301/
+kakao: # Kakao API 설정 추가
+  api:
+    base-url: https://kapi.kakao.com
+  auth:
+    base-url: https://kauth.kakao.com

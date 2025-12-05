@@ -32,9 +32,14 @@ public class NongsaroBatchService {
     @Value("${nongsaro.api-key}")
     private String apiKey;
 
-    private static final String BASE_URL = "http://api.nongsaro.go.kr/service/garden/gardenList";
-    private static final String DETAIL_URL = "http://api.nongsaro.go.kr/service/garden/gardenDtl";
-    private static final String IMAGE_BASE_URL = "http://www.nongsaro.go.kr/cms_contents/301/";
+    @Value("${nongsaro.api.base-url}")
+    private String baseUrl;
+
+    @Value("${nongsaro.api.detail-url}")
+    private String detailUrl;
+
+    @Value("${nongsaro.api.image-base-url}")
+    private String imageBaseUrl;
 
     /**
      * 농사로 API 데이터를 수집하여 DB에 저장합니다.

@@ -6,7 +6,7 @@ import com.leafy.user.domain.User;
 import com.leafy.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Value; // @Value import 추가
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,13 +27,19 @@ public class KakaoMessageService {
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper; // JSON 변환용
 
+    @Value("${app.frontend-url}")
+    private String frontendUrl; // app.frontend-url 설정값을 주입받음
+
     // application.properties (또는 .env)에 있는 키 값을 가져옵니다.
     // 변수명이 다르면 수정해주세요! (예: ${spring.security.oauth2.client.registration.kakao.client-id})
     @Value("${spring.security.oauth2.client.registration.kakao.client-id}")
     private String clientId;
 
-    private static final String KAKAO_API_BASE_URL = "https://kapi.kakao.com";
-    private static final String KAKAO_AUTH_BASE_URL = "https://kauth.kakao.com";
+    @Value("${kakao.api.base-url}")
+    private String kakaoApiBaseUrl;
+
+    @Value("${kakao.auth.base-url}")
+    private String kakaoAuthBaseUrl;
 
     /**
      * 카카오톡 '나에게 보내기' (기본 텍스트 템플릿)
@@ -81,15 +87,15 @@ public class KakaoMessageService {
         templateObj.put("object_type", "text");
         templateObj.put("text", text);
         templateObj.put("link", Map.of(
-                "web_url", "http://localhost:5500", // 클릭 시 이동할 PC 주소
-                "mobile_web_url", "http://localhost:5500" // 클릭 시 이동할 모바일 주소
+                "web_url", frontendUrl, // 설정 파일에서 로드된 프론트엔드 주소 사용
+                "mobile_web_url", frontendUrl // 설정 파일에서 로드된 프론트엔드 주소 사용
         ));
         templateObj.put("button_title", "Leafy 앱으로 가기");
 
         String templateJson = objectMapper.writeValueAsString(templateObj);
 
         // WebClient로 전송
-        WebClient.create(KAKAO_API_BASE_URL).post()
+        WebClient.create(kakaoApiBaseUrl).post() // 주입받은 kakaoApiBaseUrl 사용
                 .uri("/v2/api/talk/memo/default/send")
                 .header("Authorization", "Bearer " + accessToken)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -117,7 +123,7 @@ public class KakaoMessageService {
             formData.add("refresh_token", refreshToken);
 
             // 토큰 갱신 API 호출
-            Map response = WebClient.create(KAKAO_AUTH_BASE_URL).post()
+            Map response = WebClient.create(kakaoAuthBaseUrl).post() // 주입받은 kakaoAuthBaseUrl 사용
                     .uri("/oauth/token")
                     .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                     .body(BodyInserters.fromFormData(formData))

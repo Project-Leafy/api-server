@@ -32,7 +32,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
 
     // ✨ 2. application.yml에서 주소를 가져오는 변수 선언 (이게 빠져 있었음)
     // 기존 줄 삭제하고 이 두 줄로 교체
-    @Value("${app.frontend-url:http://3.38.12.121/callback.html}")
+    @Value("${app.frontend-url}") // 기본값 제거
     private String frontendUrl;
     
     // ✨ [추가] 카카오 토큰 정보가 담긴 'AuthorizedClient'를 가져오기 위한 저장소

@@ -23,10 +23,11 @@ public class WeatherService {
     @Value("${OPEN_WEATHER_API_KEY}")
     private String serviceKey;
 
+    @Value("${kma.api.url}") // application.yaml에서 KMA API URL 주입
+    private String kmaApiUrl;
+
     private final WebClient.Builder webClientBuilder;
     private final ObjectMapper objectMapper;
-
-    private static final String KMA_API_URL = "http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst";
 
     /**
      * 오늘 비가 오는지 확인 (True: 비 옴 / False: 맑음)
@@ -43,12 +44,12 @@ public class WeatherService {
             String baseTime = "0500"; // 05시 발표 예보가 정확도가 높음
 
             // 3. 인코딩 문제 해결을 위한 URI Factory 설정
-            DefaultUriBuilderFactory factory = new DefaultUriBuilderFactory(KMA_API_URL);
+            DefaultUriBuilderFactory factory = new DefaultUriBuilderFactory(kmaApiUrl); // 주입받은 URL 사용
             factory.setEncodingMode(DefaultUriBuilderFactory.EncodingMode.NONE); // 키가 이미 인코딩된 경우
 
             WebClient webClient = webClientBuilder
                     .uriBuilderFactory(factory)
-                    .baseUrl(KMA_API_URL)
+                    .baseUrl(kmaApiUrl) // 주입받은 URL 사용
                     .build();
 
             String response = webClient.get()

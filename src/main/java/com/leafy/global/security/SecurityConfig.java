@@ -17,7 +17,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import java.util.Arrays;
+import java.util.List; // List import 추가
+import org.springframework.beans.factory.annotation.Value; // @Value import 추가
 
 @Configuration
 @EnableWebSecurity
@@ -27,6 +28,9 @@ public class SecurityConfig {
     private final JwtTokenProvider jwtTokenProvider;
     private final CustomOAuth2UserService customOAuth2UserService; // Role을 부여하는 서비스
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler; // JWT 토큰 발행 핸들러
+
+    @Value("${app.cors-allowed-origins}")
+    private List<String> corsAllowedOrigins;
 
     /**
      * Spring Security 필터 체인을 구성합니다.
@@ -95,17 +99,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // ✨ [수정] 여기에 실제 IP 주소를 추가해야 한다!
-        configuration.setAllowedOrigins(Arrays.asList(
-                "http://localhost:5500",      // 로컬 개발용
-                "http://127.0.0.1:5500",      // 로컬 개발용
-                "http://3.38.12.121"          // ⭕️ 실제 배포된 프론트엔드 주소 (이거 없으면 에러 남)
-                // 만약 나중에 도메인을 산다면 "https://www.mydomain.com" 도 여기에 추가
-        ));
-        // 프론트엔드 서버 주소(5500) 허용 -> vsCode Live Server
-        /*
-        * 모든 HTML 페이지는 프론트엔드 서버(VS Code Live Server, localhost:5500)가 담당한다.
-        * */
+        configuration.setAllowedOrigins(corsAllowedOrigins); // 설정 파일에서 로드된 Origins 사용
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*")); // 모든 헤더 허용
         configuration.setAllowCredentials(true); // 자격 증명(쿠키, 인증 헤더) 허용
@@ -115,4 +109,5 @@ public class SecurityConfig {
         return source;
     }
 }
+
 

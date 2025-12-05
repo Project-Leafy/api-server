@@ -1,0 +1,49 @@
+# --- 🔐 JWT 설정 ---
+jwt:
+  secret: ${JWT_SECRET_KEY_DEV:default-dev-secret-key-for-local-use} # 개발용 기본 시크릿 키
+
+# 3. Spring Boot 전체 설정
+spring:
+  # (2) 데이터베이스(PostgreSQL) & JPA 설정
+  datasource:
+    url: jdbc:postgresql://localhost:5432/leafy_dev # 개발용 로컬 DB 주소
+    username: ${DB_USERNAME_DEV:postgres} # 개발용 DB 사용자 이름
+    password: ${DB_PASSWORD_DEV:password} # 개발용 DB 비밀번호
+  jpa:
+    hibernate:
+      ddl-auto: create-drop # 개발 환경에서는 시작 시 스키마를 생성하고 종료 시 삭제
+
+  # --- OAuth2 Client 설정 ---
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:
+            client-id: ${KAKAO_REST_API_KEY}
+            client-secret: ${KAKAO_CLIENT_SECRET}
+            redirect-uri: http://localhost:8080/login/oauth2/code/kakao # 개발용 리다이렉트 URI
+
+# --- 외부 API 설정 ---
+# 개발 환경에서는 실제 호출을 막거나, 테스트용 키를 사용할 수 있습니다.
+plant:
+  id:
+    api-key: ${PLANT_ID_API_KEY_DEV:}
+
+cloudfront:
+  url: http://localhost:8080 # 로컬 테스트용 URL
+
+aws:
+  s3:
+    bucket-name: ${S3_BUCKET_NAME_DEV:}
+
+# [핵핵심] 프론트엔드 리다이렉트 주소 설정
+app:
+  frontend-url: http://localhost:3000/callback.html # 로컬 프론트엔드 URL
+  cors-allowed-origins:
+    - http://localhost:5500 # 로컬 개발용 VS Code Live Server
+    - http://127.0.0.1:5500 # 로컬 개발용 VS Code Live Server
+    - http://localhost:3000 # 로컬 개발용 프론트엔드 서버 (예시)
+    - http://localhost:8080 # Swagger UI 테스트를 위해 로컬 서버 허용
+
+nongsaro:
+  api-key: ${NONGSARO_API_KEY_DEV:}
