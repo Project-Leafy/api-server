@@ -81,7 +81,7 @@ jobs:
             echo "PERENUAL_API_KEY=${{ secrets.PERENUAL_API_KEY }}" >> .env
             echo "AIR_API_KEY=${{ secrets.AIR_API_KEY }}" >> .env
 
-            echo "TAG=${{ env.TAG }}" >> .env
+            echo "BACKEND_TAG=${{ env.TAG }}" >> .env
 
             # 도커 실행
             sudo docker-compose pull backend
