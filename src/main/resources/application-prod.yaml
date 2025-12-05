@@ -22,8 +22,8 @@ spring:
             client-id: ${KAKAO_REST_API_KEY}
             client-secret: ${KAKAO_CLIENT_SECRET}
             redirect-uri: https://leafy-pr.com/login/oauth2/code/kakao # 배포 환경 리다이렉트 URI
-            client-authentication-method: client_secret_post
             authorization-grant-type: authorization_code
+            client-authentication-method: client_secret_post
 
 # --- 외부 API 설정 ---
 plant:
