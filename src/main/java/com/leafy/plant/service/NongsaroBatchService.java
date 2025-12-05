@@ -47,7 +47,7 @@ public class NongsaroBatchService {
     public void fetchAllAndSave() {
         log.info("🚀 농사로 전체 데이터 수집 시작...");
 
-        URI uri = UriComponentsBuilder.fromHttpUrl(BASE_URL)
+        URI uri = UriComponentsBuilder.fromHttpUrl(baseUrl)
                 .queryParam("apiKey", apiKey)
                 .queryParam("numOfRows", "300")
                 .queryParam("pageNo", "1")
@@ -87,7 +87,7 @@ public class NongsaroBatchService {
     private void fetchDetailAndSave(NongsaroListItem listItem) {
         String cntntsNo = listItem.getCntntsNo();
         try {
-            URI detailUri = UriComponentsBuilder.fromHttpUrl(DETAIL_URL)
+            URI detailUri = UriComponentsBuilder.fromHttpUrl(detailUrl)
                     .queryParam("apiKey", apiKey)
                     .queryParam("cntntsNo", cntntsNo)
                     .build()
@@ -122,7 +122,7 @@ public class NongsaroBatchService {
         if (listItem.getRtnFileCours() != null && listItem.getRtnStreFileNm() != null) {
             String path = listItem.getRtnFileCours().split("\\|")[0];
             String fileName = listItem.getRtnStreFileNm().split("\\|")[0];
-            fullImageUrl = IMAGE_BASE_URL + path + "/" + fileName;
+            fullImageUrl = imageBaseUrl + path + "/" + fileName;
         }
 
         NongSaro nongSaro = builder

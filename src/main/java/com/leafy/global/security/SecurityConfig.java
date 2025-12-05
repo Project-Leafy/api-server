@@ -17,7 +17,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import java.util.List; // List import 추가
+import java.util.List;
+import java.util.Arrays;
 import org.springframework.beans.factory.annotation.Value; // @Value import 추가
 
 @Configuration
