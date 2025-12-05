@@ -20,7 +20,6 @@ jobs:
       - name: Generate Image Tag
         id: image_tag
         run: |
-          # 리눅스 시간대를 서울로 설정 후 포맷팅
           sudo timedatectl set-timezone Asia/Seoul
           echo "TAG=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
 
@@ -46,7 +45,7 @@ jobs:
         with:
           context: .
           push: 'true'
-          tags: 
+          tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/leafy-backend:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/leafy-backend:${{ env.TAG }}
 
@@ -60,11 +59,15 @@ jobs:
             mkdir -p /home/ubuntu/deploy
             cd /home/ubuntu/deploy
 
+            # 1. 기존 FRONTEND_TAG 백업 (지워짐 방지)
+            touch .env
+            PREV_FRONT_TAG=$(grep "^FRONTEND_TAG=" .env || echo "")
+
+            # 2. .env 파일 새로 생성 (덮어쓰기)
             echo "RDS_HOST=${{ secrets.RDS_HOST }}" > .env
             echo "RDS_USER=${{ secrets.RDS_USER }}" >> .env
             echo "RDS_PASSWORD=${{ secrets.RDS_PASSWORD }}" >> .env
             echo "RDS_DB_NAME=${{ secrets.RDS_DB_NAME }}" >> .env
-
             echo "CLOUDFRONT_URL=${{ secrets.CLOUDFRONT_URL }}" >> .env
             
             echo "AWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }}" >> .env
@@ -81,9 +84,15 @@ jobs:
             echo "PERENUAL_API_KEY=${{ secrets.PERENUAL_API_KEY }}" >> .env
             echo "AIR_API_KEY=${{ secrets.AIR_API_KEY }}" >> .env
 
+            # 3. 새 백엔드 태그 추가
             echo "BACKEND_TAG=${{ env.TAG }}" >> .env
 
-            # 도커 실행
-            sudo docker-compose pull backend
-            sudo docker-compose up -d --force-recreate backend
+            # 4. 백업해둔 프론트엔드 태그 복구
+            if [ -n "$PREV_FRONT_TAG" ]; then
+              echo "$PREV_FRONT_TAG" >> .env
+            fi
+
+            # 도커 실행 (docker-compose -> docker compose)
+            sudo docker compose pull backend
+            sudo docker compose up -d backend
             sudo docker image prune -f
