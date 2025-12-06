@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -63,12 +64,14 @@ public class ScheduleService {
             throw new IllegalArgumentException("본인의 식물에만 일정을 추가할 수 있습니다.");
         }
 
+        Integer frequency = convertRecurrenceToDays(request.getRecurrencePattern());
+
         // 4. 스케줄 생성 및 저장
         Schedule schedule = Schedule.builder()
                 .myPlant(myPlant)
                 .scheduleType(request.getScheduleType())
                 .nextDueDate(request.getNextDueDate())
-                .frequencyDays(null)
+                .frequencyDays(frequency) // (2) 변환된 값을 저장
                 .notificationStatus("PENDING")
                 .build();
 
@@ -87,6 +90,18 @@ public class ScheduleService {
         }
 
         return savedSchedule.getScheduleId();
+    }
+
+    private Integer convertRecurrenceToDays(String recurrencePattern) {
+        if (recurrencePattern == null || Objects.equals(recurrencePattern.toUpperCase(), "NONE")) {
+            return null; // 반복 안함은 null
+        }
+        return switch (recurrencePattern.toUpperCase()) {
+            case "DAILY" -> 1;
+            case "WEEKLY" -> 7;
+            case "MONTHLY" -> 30; // 단순하게 30일로 계산
+            default -> null;
+        };
     }
 
     // --- [3] (기존 기능 유지) 식물 등록 시 자동 스케줄 생성 ---

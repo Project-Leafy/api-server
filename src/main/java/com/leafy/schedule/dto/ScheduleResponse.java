@@ -16,6 +16,7 @@ public class ScheduleResponse {
     private String scheduleType;
     private LocalDate nextDueDate;
 
+    private Integer frequencyDays; // 반복 주기를 알려줄 필드
     public ScheduleResponse(Schedule schedule) {
         this.scheduleId = schedule.getScheduleId();
         // NullPointerException 방지를 위한 안전장치 추가 (권장)
@@ -25,5 +26,6 @@ public class ScheduleResponse {
         }
         this.scheduleType = schedule.getScheduleType();
         this.nextDueDate = schedule.getNextDueDate();
+        this.frequencyDays = schedule.getFrequencyDays(); // 생성자에서 값 할당
     }
 }
