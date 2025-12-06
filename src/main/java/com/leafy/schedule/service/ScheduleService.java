@@ -105,14 +105,14 @@ public class ScheduleService {
     }
 
     // --- [3] (기존 기능 유지) 식물 등록 시 자동 스케줄 생성 ---
-    public void createInitialSchedule(MyPlant myPlant) {
-        WaterFrequency frequencyEnum = myPlant.getPlantSpecies().getWateringFrequency();
-        int waterDays = convertFrequencyToDays(frequencyEnum);
-        saveSchedule(myPlant, "WATER", waterDays);
-
-        saveSchedule(myPlant, "REPOT", 365);
-        saveSchedule(myPlant, "FERTILIZE", 30);
-    }
+//    public void createInitialSchedule(MyPlant myPlant) {
+//        WaterFrequency frequencyEnum = myPlant.getPlantSpecies().getWateringFrequency();
+//        int waterDays = convertFrequencyToDays(frequencyEnum);
+//        saveSchedule(myPlant, "WATER", waterDays);
+//
+//        saveSchedule(myPlant, "REPOT", 365);
+//        saveSchedule(myPlant, "FERTILIZE", 30);
+//    }
 
     private void saveSchedule(MyPlant myPlant, String type, int frequencyDays) {
         Schedule schedule = Schedule.builder()
