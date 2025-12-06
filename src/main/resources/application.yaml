@@ -50,6 +50,13 @@ spring:
             user-info-uri: https://kapi.kakao.com/v2/user/me
             user-name-attribute: id
 
+  cloud:
+    aws:
+      region:
+        static: ap-northeast-2
+      stack:
+        auto: false
+
 # 3. 서버 기본 설정
 server:
   port: 8080
