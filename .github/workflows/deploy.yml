@@ -64,17 +64,18 @@ jobs:
             PREV_FRONT_TAG=$(grep "^FRONTEND_TAG=" .env || echo "")
 
             # 2. .env 파일 새로 생성 (덮어쓰기)
+            # DB
             echo "RDS_HOST=${{ secrets.RDS_HOST }}" > .env
             echo "RDS_USER=${{ secrets.RDS_USER }}" >> .env
             echo "RDS_PASSWORD=${{ secrets.RDS_PASSWORD }}" >> .env
             echo "RDS_DB_NAME=${{ secrets.RDS_DB_NAME }}" >> .env
+
+            # AWS
             echo "CLOUDFRONT_URL=${{ secrets.CLOUDFRONT_URL }}" >> .env
-            
-            echo "AWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }}" >> .env
-            echo "AWS_SECRET_KEY=${{ secrets.AWS_SECRET_KEY }}" >> .env
             echo "AWS_REGION=${{ secrets.AWS_REGION }}" >> .env
             echo "S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }}" >> .env
-            
+
+            # 외부 API
             echo "KAKAO_REST_API_KEY=${{ secrets.KAKAO_REST_API_KEY }}" >> .env
             echo "KAKAO_CLIENT_SECRET=${{ secrets.KAKAO_CLIENT_SECRET }}" >> .env
             echo "PLANT_ID_API_KEY=${{ secrets.PLANT_ID_API_KEY }}" >> .env
@@ -92,7 +93,7 @@ jobs:
               echo "$PREV_FRONT_TAG" >> .env
             fi
 
-            # 도커 실행 (docker-compose -> docker compose)
+            # 도커 실행
             sudo docker compose pull backend
             sudo docker compose up -d backend
             sudo docker image prune -f
