@@ -68,7 +68,7 @@ public class MyPlantService {
         MyPlant savedPlant = myPlantRepository.save(myPlant);
 
         // 5. 스케줄 자동 생성 호출!
-        scheduleService.createInitialSchedule(savedPlant);
+        //scheduleService.createInitialSchedule(savedPlant);
 
         return MyPlantResponseDto.from(savedPlant);
     }
