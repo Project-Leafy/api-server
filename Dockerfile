@@ -13,7 +13,7 @@ COPY src ./src
 RUN gradle bootJar -x test --no-daemon
 
 # 2. 실행 단계 (가벼운 Java 실행 환경만 포함)
-FROM eclipse-temurin:17-jre-alpine
+FROM amazoncorretto:17-alpine
 WORKDIR /app
 
 # 빌드 단계에서 생성된 jar 파일만 가져옴
