@@ -14,6 +14,7 @@ import com.leafy.plant.repository.MyPlantRepository;
 import com.leafy.user.domain.User;
 import com.leafy.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -32,7 +33,6 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 @Transactional
 public class DiagnosisService {
 
@@ -42,6 +42,20 @@ public class DiagnosisService {
     private final MyPlantRepository myPlantRepository;
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
+
+    public DiagnosisService(@Qualifier("plantIdWebClient") WebClient plantIdWebClient,
+                            S3UploadService s3UploadService,
+                            DiagnosisHistoryRepository diagnosisHistoryRepository,
+                            MyPlantRepository myPlantRepository,
+                            UserRepository userRepository,
+                            ObjectMapper objectMapper) {
+        this.plantIdWebClient = plantIdWebClient;
+        this.s3UploadService = s3UploadService;
+        this.diagnosisHistoryRepository = diagnosisHistoryRepository;
+        this.myPlantRepository = myPlantRepository;
+        this.userRepository = userRepository;
+        this.objectMapper = objectMapper;
+    }
 
     /**
      * 식물 건강 진단 요청 및 저장

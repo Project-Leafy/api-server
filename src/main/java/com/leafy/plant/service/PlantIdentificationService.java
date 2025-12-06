@@ -13,6 +13,7 @@ import com.leafy.user.domain.User;
 import com.leafy.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -28,7 +29,6 @@ import java.util.Optional;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 @Transactional
 public class PlantIdentificationService {
 
@@ -39,6 +39,18 @@ public class PlantIdentificationService {
     private final PlantSpeciesRepository plantSpeciesRepository;
     private final MyPlantRepository myPlantRepository;
     private final UserRepository userRepository;
+
+    public PlantIdentificationService(@Qualifier("plantIdWebClient") WebClient plantIdWebClient,
+                                    S3UploadService s3UploadService,
+                                    PlantSpeciesRepository plantSpeciesRepository,
+                                    MyPlantRepository myPlantRepository,
+                                    UserRepository userRepository) {
+        this.plantIdWebClient = plantIdWebClient;
+        this.s3UploadService = s3UploadService;
+        this.plantSpeciesRepository = plantSpeciesRepository;
+        this.myPlantRepository = myPlantRepository;
+        this.userRepository = userRepository;
+    }
 
     public PlantIdentificationResponseDto identifyAndPrepareRegistration(
             MultipartFile imageFile, Double lat, Double lon) throws IOException {
