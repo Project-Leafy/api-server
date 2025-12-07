@@ -1,12 +1,9 @@
 package com.leafy.diagnosis.controller;
 
 import com.leafy.diagnosis.dto.DiagnosisResponseDto;
-import com.leafy.diagnosis.dto.PlantIdResponseDto;
 import com.leafy.diagnosis.service.DiagnosisService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -29,7 +26,8 @@ public class DiagnosisController {
     @Operation(summary = "식물 건강 진단 요청", description = "식물 사진을 업로드하여 AI에게 병해충 진단을 요청하고 결과를 저장합니다.")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<PlantIdResponseDto> createDiagnosis(
+    // 🚨 [수정 1] 반환 타입을 PlantIdResponseDto -> DiagnosisResponseDto 로 변경해야 합니다!
+    public ResponseEntity<DiagnosisResponseDto> createDiagnosis(
             @Parameter(description = "진단할 내 식물 ID") @RequestParam("myPlantId") Long myPlantId,
             @Parameter(description = "식물 사진 파일") @RequestParam("image") MultipartFile imageFile,
             @RequestParam(name = "lat", required = false) Double lat,
@@ -39,10 +37,12 @@ public class DiagnosisController {
             return ResponseEntity.badRequest().build();
         }
 
-        PlantIdResponseDto response = diagnosisService.diagnosePlant(myPlantId, imageFile, lat, lon);
+        // ✅ 이제 서비스가 DiagnosisResponseDto를 주므로 타입이 일치합니다.
+        DiagnosisResponseDto response = diagnosisService.diagnosePlant(myPlantId, imageFile, lat, lon);
         return ResponseEntity.ok(response);
     }
 
+    // ... (나머지 메소드는 그대로) ...
     @Operation(summary = "식물별 진단 기록 목록 조회", description = "특정 식물의 과거 진단 이력을 최신순으로 조회합니다.")
     @GetMapping("/plants/{myPlantId}")
     @PreAuthorize("isAuthenticated()")

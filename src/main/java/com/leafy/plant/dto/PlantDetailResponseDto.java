@@ -31,8 +31,18 @@ public class PlantDetailResponseDto {
     @JsonProperty("image_url")
     private String imageUrl;
 
+    // 🚨 [수정 1] 프론트엔드에서 'adoption_date'로 찾을 수 있게 이름표 붙이기
+    // 날짜 포맷도 고정해주면 더 안전합니다.
+    @JsonProperty("adoption_date")
+    @com.fasterxml.jackson.annotation.JsonFormat(shape = com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd", timezone = "Asia/Seoul")
     private LocalDate adoptionDate; // ✅ 이 필드 추가
+
+    // 🚨 [수정할 부분] 여기가 범인이다!
+    // 프론트엔드가 snake_case를 좋아하므로, 여기서 이름을 강제로 바꿔준다.
+    @JsonProperty("identification_candidates")
     private List<IdentificationCandidateDto> identificationCandidates;
+
+    @JsonProperty("latest_diagnosis") // 혹시 몰라 진단 기록도 snake_case 처리 해주는 게 좋다.
     private DiagnosisResponseDto latestDiagnosis;
 
     public record IdentificationCandidateDto(

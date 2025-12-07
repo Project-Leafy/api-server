@@ -64,8 +64,7 @@ public class ScheduleService {
             throw new IllegalArgumentException("본인의 식물에만 일정을 추가할 수 있습니다.");
         }
 
-        Integer frequency = convertRecurrenceToDays(request.getRecurrencePattern());
-
+        Integer frequency = request.getFrequencyDays();
         // 4. 스케줄 생성 및 저장
         Schedule schedule = Schedule.builder()
                 .myPlant(myPlant)
