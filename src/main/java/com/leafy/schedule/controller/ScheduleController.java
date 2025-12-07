@@ -39,4 +39,11 @@ public class ScheduleController {
         response.put("message", "일정이 성공적으로 추가되었습니다.");
         return ResponseEntity.ok(response);
     }
+
+    // ✅ 일정 삭제 API 추가
+    @DeleteMapping("/{scheduleId}")
+    public ResponseEntity<Void> deleteSchedule(@PathVariable Long scheduleId) {
+        scheduleService.deleteSchedule(scheduleId);
+        return ResponseEntity.noContent().build();
+    }
 }
