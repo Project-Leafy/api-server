@@ -60,7 +60,7 @@ public class DiagnosisService {
     /**
      * 식물 건강 진단 요청 및 저장
      */
-    public PlantIdResponseDto diagnosePlant(Long myPlantId, MultipartFile imageFile, Double lat, Double lon) throws IOException {
+    public DiagnosisResponseDto diagnosePlant(Long myPlantId, MultipartFile imageFile, Double lat, Double lon) throws IOException {
 
         // 1. 사용자 및 식물 소유권 검증
         String principalName = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -102,18 +102,24 @@ public class DiagnosisService {
                 .bodyToMono(PlantIdResponseDto.class)
                 .block();
 
-        // 5. 결과 저장
+        // 5. 결과 저장 및 반환 로직 수정
         if (apiResponse != null && apiResponse.result() != null) {
-            saveDiagnosisHistory(myPlant, s3ImageUrl, apiResponse);
+            // saveDiagnosisHistory가 이제 저장된 엔티티(DiagnosisHistory)를 반환합니다.
+            DiagnosisHistory savedHistory = saveDiagnosisHistory(myPlant, s3ImageUrl, apiResponse);
+
+            if (savedHistory != null) {
+                // ✅ 저장된 엔티티를 DTO로 변환해서 컨트롤러에게 줍니다.
+                return DiagnosisResponseDto.from(savedHistory);
+            }
         }
 
-        return apiResponse;
+        throw new RuntimeException("식물 진단에 실패했거나 결과를 저장하지 못했습니다.");
     }
 
     /**
      * 진단 결과 DB 저장 로직
      */
-    private void saveDiagnosisHistory(MyPlant myPlant, String imageUrl, PlantIdResponseDto response) {
+    private DiagnosisHistory saveDiagnosisHistory(MyPlant myPlant, String imageUrl, PlantIdResponseDto response) {
         try {
             PlantIdResponseDto.Result result = response.result();
 
@@ -132,8 +138,15 @@ public class DiagnosisService {
 
             // 3. 치료법 JSON 변환
             String solutionJson = null;
-            if (topDisease != null && topDisease.details() != null && topDisease.details().treatment() != null) {
-                solutionJson = objectMapper.writeValueAsString(topDisease.details().treatment());
+            // null 체크를 단계별로 안전하게 수행 (Optional을 써도 되지만, 이게 더 직관적일 수 있음)
+            if (topDisease != null && topDisease.details() != null) {
+                var details = topDisease.details();
+
+                // treatment가 있으면 저장
+                if (details.treatment() != null) {
+                    solutionJson = objectMapper.writeValueAsString(details.treatment());
+                }
+                // 혹시 treatment는 없고 description(설명)만 있는 경우도 대비하고 싶다면 여기서 추가 로직 작성 가능
             }
 
             // 4. 건강 여부 및 확률 매핑
@@ -166,36 +179,12 @@ public class DiagnosisService {
                     .feedbackStep(DiagnosisFeedbackStep.NONE) // @Builder.Default 설정되어 있으나 명시적으로 지정
                     .build();
 
-            diagnosisHistoryRepository.save(history);
+            return diagnosisHistoryRepository.save(history);
 
         } catch (JsonProcessingException e) {
             log.error("Failed to parse treatment solution to JSON", e);
+            return null; // 실패 시 null 반환
         }
-
-//        Boolean isHealthy = (result.isHealthy() != null) ? result.isHealthy().binary() : true;
-//        BigDecimal healthProbability = (result.isHealthy() != null) ? result.isHealthy().healthProbability() : null;
-//        BigDecimal isPlantProbability = (result.isPlant() != null) ? result.isPlant().isPlantProbability() : BigDecimal.ZERO;
-//
-//        LocalDate today = LocalDate.now();
-//
-//        // 엔티티 생성 및 저장
-//        DiagnosisHistory history = DiagnosisHistory.builder()
-//                .myPlant(myPlant)
-//                .diagnosisDatetime(LocalDateTime.now())
-//                .requestImageUrl(s3ImageUrl)
-//                .apiAccessToken(response.accessToken())
-//                .isPlantProbability(isPlantProbability)
-//                .isHealthy(isHealthy)
-//                .healthProbability(healthProbability)
-//                .diseaseName(diseaseName)
-//                .diseaseProbability(diseaseProbability)
-//                .solutionDetail(solutionDetail)
-//                .tipDate(today.plusDays(2))   // D+2
-//                .checkDate(today.plusDays(5)) // D+5
-//                .feedbackStep(DiagnosisFeedbackStep.NONE)
-//                .build();
-//
-//        diagnosisHistoryRepository.save(history);
     }
 
     /**
