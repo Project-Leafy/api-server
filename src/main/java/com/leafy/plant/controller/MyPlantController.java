@@ -2,6 +2,7 @@ package com.leafy.plant.controller;
 
 import com.leafy.plant.dto.MyPlantResponseDto;
 import com.leafy.plant.dto.PlantDetailResponseDto;
+import com.leafy.plant.dto.UpdateMyPlantRequest;
 import com.leafy.plant.service.MyPlantService;
 import com.leafy.user.domain.User;
 import com.leafy.user.repository.UserRepository;
@@ -88,12 +89,13 @@ public class MyPlantController {
     @PatchMapping("/{plantId}")
     public ResponseEntity<?> updateMyPlant(
             @PathVariable Long plantId,
-            @RequestBody Map<String, Object> updates,
+            @RequestBody UpdateMyPlantRequest request, // 👈 Map 대신 DTO 사용
             @AuthenticationPrincipal UserDetails userDetails) {
 
         try {
             User user = getAuthenticatedUser(userDetails);
-            MyPlantResponseDto response = myPlantService.updateMyPlant(plantId, updates, user);
+            // Service 메소드도 DTO를 받도록 수정 필요
+            MyPlantResponseDto response = myPlantService.updateMyPlant(plantId, request, user);
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
