@@ -10,14 +10,21 @@ import java.time.LocalDate;
 @NoArgsConstructor
 public class ScheduleRequest {
 
-    private Long plantId;        // JSON의 plant_id 가 여기로 자동 매핑됨
+    // ✅ (중요) 여기에 @JsonProperty를 붙여야 "plant_id" 값을 제대로 인식한다.
+    @JsonProperty("plant_id")
+    private Long plantId;
 
-    private String scheduleType; // JSON의 schedule_type 이 여기로 자동 매핑됨
+    // ✅ 여기도 붙여주는 것이 안전하다.
+    @JsonProperty("schedule_type")
+    private String scheduleType;
 
+    // ✅ 여기도 붙여준다.
+    @JsonProperty("next_due_date")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd", timezone = "Asia/Seoul")
-    private LocalDate nextDueDate; // JSON의 next_due_date 가 여기로 자동 매핑됨
+    private LocalDate nextDueDate;
 
-    // --- ▼▼▼ [수정] 이 부분을 추가하세요 ▼▼▼ ---
-    @JsonProperty("recurrence_pattern") // (2) 프론트에서 보낸 snake_case를 매핑
-    private String recurrencePattern;   // ex) "NONE", "DAILY", "WEEKLY", "MONTHLY"
+    // ✅ 프론트엔드에서 'frequency_days'로 보내고 있다면 이름표를 맞춰줘야 한다.
+    // (만약 프론트에서 'recurrence_pattern'으로 보낸다면 값을 "recurrence_pattern"으로 변경)
+    @JsonProperty("frequency_days")
+    private Integer frequencyDays;
 }
