@@ -1,30 +1,30 @@
 package com.leafy.plant.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper; // ✅ 추가
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.leafy.diagnosis.domain.DiagnosisHistory;
 import com.leafy.diagnosis.repository.DiagnosisHistoryRepository;
-import com.leafy.plant.dto.PlantDetailResponseDto; // ✅ 추가 (반환 타입 변경)
-import com.leafy.diagnosis.domain.DiagnosisHistory; // ✅ 추가 (Optional 사용)
-import lombok.extern.slf4j.Slf4j; // ✅ 추가
-import com.leafy.plant.dto.MyPlantResponseDto;
-import com.leafy.plant.repository.MyPlantRepository;
-import com.leafy.user.domain.User;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import com.leafy.global.exception.EntityNotFoundException;
 import com.leafy.plant.domain.MyPlant;
 import com.leafy.plant.domain.PlantSpecies;
 import com.leafy.plant.dto.CreateMyPlantRequest;
+import com.leafy.plant.dto.MyPlantResponseDto;
+import com.leafy.plant.dto.PlantDetailResponseDto;
+import com.leafy.plant.dto.UpdateMyPlantRequest; // 👈 DTO 임포트
+import com.leafy.plant.repository.MyPlantRepository;
 import com.leafy.plant.repository.PlantSpeciesRepository;
-import com.leafy.global.exception.EntityNotFoundException;
-import java.time.LocalDate;
 import com.leafy.schedule.service.ScheduleService;
+import com.leafy.user.domain.User;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-@Slf4j // ✅ 추가
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -33,26 +33,26 @@ public class MyPlantService {
     private final MyPlantRepository myPlantRepository;
     private final PlantSpeciesRepository plantSpeciesRepository;
     private final ScheduleService scheduleService;
-    private final DiagnosisHistoryRepository diagnosisHistoryRepository; // ✅ 주입
-    private final ObjectMapper objectMapper; // ✅ 주입
+    private final DiagnosisHistoryRepository diagnosisHistoryRepository;
+    private final ObjectMapper objectMapper;
 
     public List<MyPlantResponseDto> findMyPlants(User user) {
         return myPlantRepository.findAllByUserOrderByCreatedAtDesc(user).stream()
                 .map(MyPlantResponseDto::from)
                 .collect(Collectors.toList());
     }
+
     /**
      * 식물 최종 등록 (저장)
      */
     @Transactional
     public MyPlantResponseDto join(User user, CreateMyPlantRequest request) {
-        // 1. 식물 종 정보 조회 (없으면 예외 발생)
+        // 1. 식물 종 정보 조회
         PlantSpecies species = plantSpeciesRepository.findById(request.speciesId())
                 .orElseThrow(() -> new EntityNotFoundException("Plant Species not found with id: " + request.speciesId()));
 
-        // 2. 입양일 설정 (입력 없으면 오늘 날짜)
+        // 2. 입양일 설정
         LocalDate adoptionDate = request.adoptionDate() != null ? request.adoptionDate() : LocalDate.now();
-
 
         // 3. 내 식물(MyPlant) 객체 생성
         MyPlant myPlant = MyPlant.builder()
@@ -61,14 +61,14 @@ public class MyPlantService {
                 .nickname(request.nickname())
                 .imageUrl(request.imageUrl())
                 .adoptionDate(adoptionDate)
-                .identificationResult(request.identificationResult()) // ✅ 추가: 식별 결과 JSON 저장
+                .identificationResult(request.identificationResult())
                 .build();
 
         // 4. DB 저장
         MyPlant savedPlant = myPlantRepository.save(myPlant);
 
-        // 5. 스케줄 자동 생성 호출!
-        //scheduleService.createInitialSchedule(savedPlant);
+        // 5. 스케줄 자동 생성 (필요시 주석 해제)
+        // scheduleService.createInitialSchedule(savedPlant);
 
         return MyPlantResponseDto.from(savedPlant);
     }
@@ -81,7 +81,6 @@ public class MyPlantService {
         MyPlant myPlant = myPlantRepository.findById(plantId)
                 .orElseThrow(() -> new EntityNotFoundException("Plant not found with id: " + plantId));
 
-        // 내 식물이 맞는지 확인
         if (!myPlant.getUser().getUserId().equals(user.getUserId())) {
             throw new IllegalArgumentException("User does not own this plant.");
         }
@@ -91,57 +90,41 @@ public class MyPlantService {
 
     /**
      * 식물 상세 조회
-     * 반환 타입: MyPlantResponseDto -> PlantDetailResponseDto로 변경
      */
     public PlantDetailResponseDto getMyPlantDetail(Long plantId) {
-        // 1. MyPlant 조회
         MyPlant myPlant = myPlantRepository.findById(plantId)
                 .orElseThrow(() -> new EntityNotFoundException("해당 식물을 찾을 수 없습니다. ID: " + plantId));
 
-        // 2. 최신 진단 기록 조회
         Optional<DiagnosisHistory> latestHistory = diagnosisHistoryRepository
                 .findTopByMyPlantOrderByDiagnosisDatetimeDesc(myPlant);
 
-        // 3. PlantDetailResponseDto의 팩토리 메서드를 사용하여 모든 정보를 취합 후 반환
-        // JSON 파싱 및 최종 DTO 조립은 PlantDetailResponseDto.of()에서 처리된다 이다.
-        return PlantDetailResponseDto.of(myPlant, latestHistory, objectMapper); // ✅ DTO 반환
+        return PlantDetailResponseDto.of(myPlant, latestHistory, objectMapper);
     }
 
-    // ✅ 새로 추가: 식물 정보 업데이트
     /**
      * 식물 정보 업데이트 (닉네임, 입양일)
+     * ✅ Map 대신 DTO(UpdateMyPlantRequest)를 받도록 수정됨
      */
     @Transactional
-    public MyPlantResponseDto updateMyPlant(Long plantId, Map<String, Object> updates, User user) {
-        // 1. MyPlant 조회
+    public MyPlantResponseDto updateMyPlant(Long plantId, UpdateMyPlantRequest request, User user) {
         MyPlant myPlant = myPlantRepository.findById(plantId)
-                .orElseThrow(() -> new EntityNotFoundException("식물을 찾을 수 없습니다. ID: " + plantId));
+                .orElseThrow(() -> new EntityNotFoundException("식물을 찾을 수 없습니다."));
 
-        // 2. 권한 체크 (본인의 식물인지 확인)
+        // 본인 식물인지 확인
         if (!myPlant.getUser().getUserId().equals(user.getUserId())) {
-            throw new IllegalArgumentException("권한이 없습니다.");
+            throw new IllegalArgumentException("수정 권한이 없습니다.");
         }
 
-        // 3. 닉네임 업데이트
-        if (updates.containsKey("nickname")) {
-            String nickname = (String) updates.get("nickname");
-            myPlant.updateNickname(nickname);
-            log.info("식물 ID {} 닉네임 업데이트: {}", plantId, nickname);
+        // 닉네임 변경 (값이 있을 때만)
+        if (request.getNickname() != null && !request.getNickname().isBlank()) {
+            myPlant.updateNickname(request.getNickname());
         }
 
-        // 4. 입양일 업데이트
-        if (updates.containsKey("adoptionDate")) {
-            String dateStr = (String) updates.get("adoptionDate");
-            LocalDate adoptionDate = LocalDate.parse(dateStr);
-            myPlant.updateAdoptionDate(adoptionDate);
-            log.info("식물 ID {} 입양일 업데이트: {}", plantId, adoptionDate);
+        // 입양일 변경 (값이 있을 때만)
+        if (request.getAdoptionDate() != null) {
+            myPlant.updateAdoptionDate(request.getAdoptionDate());
         }
 
-        // 5. 저장 (더티 체킹으로 자동 업데이트되지만 명시적으로 save 호출)
-        MyPlant savedMyPlant = myPlantRepository.save(myPlant);
-
-        // 6. DTO로 변환하여 반환
-        return MyPlantResponseDto.from(savedMyPlant);
+        return MyPlantResponseDto.from(myPlant);
     }
-
 }
