@@ -54,4 +54,29 @@ public class S3UploadService {
         // 4. CloudFront URL 반환
         return cloudfrontUrl + "/" + fileName;
     }
+
+    /**
+     * 농사로에서 보내준 이미지(InputStream)를 S3에 업로드
+     */
+    public String upload(InputStream inputStream, String originalFileName, long contentLength, String contentType, String dirName) {
+        // 1. 파일 이름 생성
+        String extension = (originalFileName != null && originalFileName.contains("."))
+                ? originalFileName.substring(originalFileName.lastIndexOf("."))
+                : ".jpg"; // 확장자 없으면 jpg 기본
+        String fileName = dirName + "/" + UUID.randomUUID() + extension;
+
+        // 2. 요청 생성 (ACL 없음 - 프라이빗)
+        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                .bucket(bucketName)
+                .key(fileName)
+                .contentType(contentType)
+                .contentLength(contentLength)
+                .build();
+
+        // 3. 업로드
+        s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(inputStream, contentLength));
+
+        // 4. URL 반환
+        return cloudfrontUrl + "/" + fileName;
+    }
 }

@@ -81,6 +81,8 @@ dependencies {
     // [필수] XML 파싱을 위한 Jackson 확장 라이브러리
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
 
+    // html 파싱 라이브러리
+    implementation 'org.jsoup:jsoup:1.17.2'
 
     // =================================================================
     // 5. 문서화 & 코드 유틸리티 (Docs & Utils)
@@ -100,11 +102,13 @@ dependencies {
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
 
     // 인메모리 간편 DB (개발용 DB)
-    developmentOnly 'com.h2database:h2'
+    runtimeOnly 'com.h2database:h2'
 
     // 테스트 코드 작성 및 실행 도구 (JUnit, Mockito 등)
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test' // 시큐리티 관련 테스트
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher' // 테스트 실행 엔진
 }
 
