@@ -79,4 +79,18 @@ public class S3UploadService {
         // 4. URL 반환
         return cloudfrontUrl + "/" + fileName;
     }
+    public String uploadFixed(InputStream inputStream, String fileName, long contentLength, String contentType, String folder) {
+        // 폴더가 있으면 폴더명/파일명, 없으면 그냥 파일명
+        String key = (folder != null && !folder.isEmpty()) ? folder + "/" + fileName : fileName;
+
+        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                .bucket(bucketName)
+                .key(key)
+                .contentType(contentType)
+                .build();
+
+        s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(inputStream, contentLength));
+
+        return cloudfrontUrl + "/" + key;
+    }
 }
