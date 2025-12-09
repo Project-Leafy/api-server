@@ -34,6 +34,13 @@ plant:
 cloudfront:
   url: http://localhost:8080 # 로컬 테스트용 URL
 
+cloud:
+  aws:
+    credentials:
+      access-key: ${AWS_ACCESS_KEY}
+      secret-key: ${FN+4lU3NvsN3PK9vk5xOL0/wm7dQkKO9sFPO1j5h}
+
+
 aws:
   s3:
     bucket-name: ${S3_BUCKET_NAME:}
@@ -45,3 +52,6 @@ app:
 
 nongsaro:
   api-key: ${NONGSARO_API_KEY:}
+
+purify:
+  api-key: ${AIR_PURIFIY_KEY:}
