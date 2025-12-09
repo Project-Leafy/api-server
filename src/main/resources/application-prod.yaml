@@ -48,3 +48,6 @@ nongsaro:
 
 purify:
   api-key: ${AIR_PURIFIY_KEY}
+
+openai:
+  api-key: ${OPENAI_API_KEY}
