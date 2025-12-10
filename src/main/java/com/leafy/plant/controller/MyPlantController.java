@@ -1,7 +1,9 @@
 package com.leafy.plant.controller;
 
 import com.leafy.plant.dto.MyPlantResponseDto;
+import com.leafy.plant.dto.UpdatePlantStatusRequest;
 import com.leafy.plant.dto.PlantDetailResponseDto;
+import com.leafy.global.type.PlantStatus;
 import com.leafy.plant.dto.UpdateMyPlantRequest;
 import com.leafy.plant.service.MyPlantService;
 import com.leafy.user.domain.User;
@@ -105,5 +107,30 @@ public class MyPlantController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("업데이트 실패: " + e.getMessage());
         }
+    }
+
+    // ✅ 새로 추가: 반려식물 상태 업데이트
+    @Operation(summary = "반려식물 상태 업데이트", description = "반려식물의 상태를 HEALTHY 또는 WITHERED로 변경합니다.")
+    @PatchMapping("/{myPlantId}/status")
+    public ResponseEntity<MyPlantResponseDto> updateMyPlantStatus(
+            @PathVariable Long myPlantId,
+            @RequestBody UpdatePlantStatusRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        User user = getAuthenticatedUser(userDetails);
+        MyPlantResponseDto response = myPlantService.updateMyPlantStatus(myPlantId, request.getStatus(), user);
+        return ResponseEntity.ok(response);
+    }
+
+    // ✅ 새로 추가: 반려식물 상태 조회
+    @Operation(summary = "반려식물 상태 조회", description = "특정 반려식물의 현재 상태를 조회합니다.")
+    @GetMapping("/{myPlantId}/status")
+    public ResponseEntity<PlantStatus> getMyPlantStatus(
+            @PathVariable Long myPlantId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        User user = getAuthenticatedUser(userDetails);
+        PlantStatus status = myPlantService.getMyPlantStatus(myPlantId, user);
+        return ResponseEntity.ok(status);
     }
 }

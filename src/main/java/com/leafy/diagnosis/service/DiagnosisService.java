@@ -10,6 +10,7 @@ import com.leafy.diagnosis.repository.DiagnosisHistoryRepository;
 import com.leafy.global.storage.S3UploadService;
 import com.leafy.global.type.DiagnosisFeedbackStep;
 import com.leafy.plant.domain.MyPlant;
+import com.leafy.global.type.PlantStatus;
 import com.leafy.plant.repository.MyPlantRepository;
 import com.leafy.user.domain.User;
 import com.leafy.user.repository.UserRepository;
@@ -102,13 +103,14 @@ public class DiagnosisService {
                 .bodyToMono(PlantIdResponseDto.class)
                 .block();
 
-        // 5. 결과 저장 및 반환 로직 수정
+        // 5. 결과 저장, 상태 변경 및 DTO 반환 (병합된 로직)
         if (apiResponse != null && apiResponse.result() != null) {
-            // saveDiagnosisHistory가 이제 저장된 엔티티(DiagnosisHistory)를 반환합니다.
             DiagnosisHistory savedHistory = saveDiagnosisHistory(myPlant, s3ImageUrl, apiResponse);
 
             if (savedHistory != null) {
-                // ✅ 저장된 엔티티를 DTO로 변환해서 컨트롤러에게 줍니다.
+                // 진단이 성공적으로 저장되었으므로 식물 상태를 SICK으로 변경
+                myPlant.updateStatus(PlantStatus.SICK);
+                // 저장된 엔티티를 DTO로 변환해서 컨트롤러에게 반환
                 return DiagnosisResponseDto.from(savedHistory);
             }
         }
@@ -183,7 +185,7 @@ public class DiagnosisService {
 
         } catch (JsonProcessingException e) {
             log.error("Failed to parse treatment solution to JSON", e);
-            return null; // 실패 시 null 반환
+            return null;
         }
     }
 
