@@ -29,7 +29,7 @@ public class DiagnosisController {
     @Operation(summary = "식물 건강 진단 요청", description = "식물 사진을 업로드하여 AI에게 병해충 진단을 요청하고 결과를 저장합니다.")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<PlantIdResponseDto> createDiagnosis(
+    public ResponseEntity<DiagnosisResponseDto> createDiagnosis(
             @Parameter(description = "진단할 내 식물 ID") @RequestParam("myPlantId") Long myPlantId,
             @Parameter(description = "식물 사진 파일") @RequestParam("image") MultipartFile imageFile,
             @RequestParam(name = "lat", required = false) Double lat,
@@ -39,7 +39,7 @@ public class DiagnosisController {
             return ResponseEntity.badRequest().build();
         }
 
-        PlantIdResponseDto response = diagnosisService.diagnosePlant(myPlantId, imageFile, lat, lon);
+        DiagnosisResponseDto response = diagnosisService.diagnosePlant(myPlantId, imageFile, lat, lon);
         return ResponseEntity.ok(response);
     }
 

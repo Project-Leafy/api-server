@@ -7,6 +7,7 @@ import com.leafy.global.type.GrowthSpeed;
 import com.leafy.global.type.LightLevel;
 import com.leafy.global.type.WaterFrequency;
 import com.leafy.plant.dto.PlantDataDto;
+import com.leafy.plant.service.PlantDataCache;
 import com.leafy.recommendation.domain.Recommendation;
 import com.leafy.recommendation.dto.RecommendationRequest;
 import com.leafy.recommendation.dto.RecommendationResponseDto;
@@ -40,7 +41,7 @@ public class RecommendationService {
     @Transactional
     public List<RecommendationResponseDto> recommendPlants(User user, RecommendationRequest request) {
         // 1. S3에서 모든 식물 데이터를 실시간으로 로드
-        List<PlantDataDto> allPlants = plantDataCache.getAllPlants();
+        List<PlantDataDto> allPlants = plantDataCache.getAllPlants().stream().collect(Collectors.toList());
 
         // 2. 사용자 추천 프로필 조회 및 설문 결과 업데이트
         Recommendation recommendationProfile = recommendationRepository.findByUser(user)

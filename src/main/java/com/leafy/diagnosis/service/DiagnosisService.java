@@ -61,7 +61,7 @@ public class DiagnosisService {
     /**
      * 식물 건강 진단 요청 및 저장
      */
-    public PlantIdResponseDto diagnosePlant(Long myPlantId, MultipartFile imageFile, Double lat, Double lon) throws IOException {
+    public DiagnosisResponseDto diagnosePlant(Long myPlantId, MultipartFile imageFile, Double lat, Double lon) throws IOException {
 
         // 1. 사용자 및 식물 소유권 검증
         String principalName = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -103,19 +103,25 @@ public class DiagnosisService {
                 .bodyToMono(PlantIdResponseDto.class)
                 .block();
 
-                    // 5. 결과 저장
-                    if (apiResponse != null && apiResponse.result() != null) {
-                        saveDiagnosisHistory(myPlant, s3ImageUrl, apiResponse);
-                        // 진단이 이루어졌으므로 식물 상태를 SICK으로 변경
-                        myPlant.updateStatus(PlantStatus.SICK);
-                    }
-        return apiResponse;
+        // 5. 결과 저장, 상태 변경 및 DTO 반환 (병합된 로직)
+        if (apiResponse != null && apiResponse.result() != null) {
+            DiagnosisHistory savedHistory = saveDiagnosisHistory(myPlant, s3ImageUrl, apiResponse);
+
+            if (savedHistory != null) {
+                // 진단이 성공적으로 저장되었으므로 식물 상태를 SICK으로 변경
+                myPlant.updateStatus(PlantStatus.SICK);
+                // 저장된 엔티티를 DTO로 변환해서 컨트롤러에게 반환
+                return DiagnosisResponseDto.from(savedHistory);
+            }
+        }
+
+        throw new RuntimeException("식물 진단에 실패했거나 결과를 저장하지 못했습니다.");
     }
 
     /**
      * 진단 결과 DB 저장 로직
      */
-    private void saveDiagnosisHistory(MyPlant myPlant, String imageUrl, PlantIdResponseDto response) {
+    private DiagnosisHistory saveDiagnosisHistory(MyPlant myPlant, String imageUrl, PlantIdResponseDto response) {
         try {
             PlantIdResponseDto.Result result = response.result();
 
@@ -168,10 +174,11 @@ public class DiagnosisService {
                     .feedbackStep(DiagnosisFeedbackStep.NONE) // @Builder.Default 설정되어 있으나 명시적으로 지정
                     .build();
 
-            diagnosisHistoryRepository.save(history);
+            return diagnosisHistoryRepository.save(history);
 
         } catch (JsonProcessingException e) {
             log.error("Failed to parse treatment solution to JSON", e);
+            return null;
         }
 
 //        Boolean isHealthy = (result.isHealthy() != null) ? result.isHealthy().binary() : true;
