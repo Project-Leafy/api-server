@@ -33,17 +33,14 @@ import java.util.stream.Collectors;
 public class RecommendationService {
 
     private final RecommendationRepository recommendationRepository;
-    private final S3Client s3Client;
-    private final ObjectMapper objectMapper;
+    private final PlantDataCache plantDataCache;
 
-    @Value("${aws.s3.bucket-name}")
-    private String bucketName;
-    private static final String S3_KEY = "plants/final_plants.json";
+
 
     @Transactional
     public List<RecommendationResponseDto> recommendPlants(User user, RecommendationRequest request) {
         // 1. S3에서 모든 식물 데이터를 실시간으로 로드
-        List<PlantDataDto> allPlants = loadPlantsFromS3();
+        List<PlantDataDto> allPlants = plantDataCache.getAllPlants();
 
         // 2. 사용자 추천 프로필 조회 및 설문 결과 업데이트
         Recommendation recommendationProfile = recommendationRepository.findByUser(user)
@@ -99,17 +96,7 @@ public class RecommendationService {
         return responseDtos;
     }
 
-    private List<PlantDataDto> loadPlantsFromS3() {
-        try (InputStream inputStream = s3Client.getObject(GetObjectRequest.builder()
-                .bucket(bucketName)
-                .key(S3_KEY)
-                .build())) {
-            return objectMapper.readValue(inputStream, new TypeReference<>() {});
-        } catch (Exception e) {
-            log.error("Failed to load or parse plant data from S3: {}", e.getMessage());
-            throw new RuntimeException("Could not load plant data.", e);
-        }
-    }
+
 
     private WaterFrequency determineTargetWaterFrequency(Recommendation rec, WaterFrequency surveyFreq) {
         if (rec.getAnalyzedWateringPattern() != null) {

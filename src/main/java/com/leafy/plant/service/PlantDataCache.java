@@ -35,20 +35,33 @@ public class PlantDataCache {
 
     @PostConstruct
     public void load() {
-        log.info("Loading plant data cache from S3...");
-        try (InputStream inputStream = s3Client.getObject(GetObjectRequest.builder()
-                .bucket(bucketName)
-                .key(S3_KEY)
-                .build())) {
-            List<PlantDataDto> dtoList = objectMapper.readValue(inputStream, new TypeReference<>() {});
+        try {
+            log.info("Attempting to load plant data from S3...");
+            try (InputStream inputStream = s3Client.getObject(GetObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(S3_KEY)
+                    .build())) {
 
-            plantMap.putAll(dtoList.stream()
-                    .collect(Collectors.toMap(PlantDataDto::getId, Function.identity())));
-
-            log.info("Successfully loaded and cached {} plant species from S3.", plantMap.size());
-        } catch (Exception e) {
-            log.error("FATAL: Failed to load initial plant data from S3. Recommendation system will not work.", e);
-            // In a real application, you might want to prevent the application from starting if this fails.
+                List<PlantDataDto> dtoList = objectMapper.readValue(inputStream, new TypeReference<>() {});
+                plantMap.putAll(dtoList.stream()
+                        .collect(Collectors.toMap(PlantDataDto::getId, Function.identity())));
+                log.info("Successfully loaded and cached {} plant species from S3.", plantMap.size());
+            }
+        } catch (Exception s3Exception) {
+            log.warn("S3-WARN: Failed to load plant data from S3. Reason: {}. Attempting to load from local fallback.", s3Exception.getMessage());
+            try {
+                log.info("Attempting to load plant data from local fallback file: /data/final_plants.json");
+                InputStream inputStream = new TypeReference<>() {}.getClass().getResourceAsStream("/data/final_plants.json");
+                if (inputStream == null) {
+                    throw new RuntimeException("Fallback resource not found: /data/final_plants.json");
+                }
+                List<PlantDataDto> dtoList = objectMapper.readValue(inputStream, new TypeReference<>() {});
+                plantMap.putAll(dtoList.stream()
+                        .collect(Collectors.toMap(PlantDataDto::getId, Function.identity())));
+                log.info("Successfully loaded and cached {} plant species from local fallback.", plantMap.size());
+            } catch (Exception fallbackException) {
+                log.error("FATAL: Failed to load plant data from both S3 and local fallback. Recommendation system will be unavailable.", fallbackException);
+            }
         }
     }
 
