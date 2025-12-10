@@ -2,12 +2,17 @@
 
 package com.leafy.plant.domain;
 
-
+import com.leafy.schedule.domain.Schedule;         // ✅ Schedule 추가
+import com.leafy.diagnosis.domain.DiagnosisHistory; // ✅ DiagnosisHistory 추가
+import com.leafy.journal.domain.GrowthRecord;     // ✅ GrowthRecord 추가
 import com.leafy.global.common.BaseTimeEntity;
 import com.leafy.user.domain.User; // 1. 다른 도메인의 User 엔티티 import
 import com.leafy.global.type.PlantStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import java.time.LocalDate;
+import java.util.ArrayList;   // ✅ ArrayList 추가
+import java.util.List;
 
 import java.time.LocalDate;
 
@@ -72,7 +77,19 @@ public class MyPlant extends BaseTimeEntity {
         }
     }
 
-    @Builder.Default // ✨ 이 어노테이션을 꼭 붙여야 리스트가 null이 안 된다.
+
+    // ✅ [추가 1] 일정 (Schedule) 자동 삭제
+    @Builder.Default
     @OneToMany(mappedBy = "myPlant", cascade = CascadeType.ALL, orphanRemoval = true)
-    private java.util.List<com.leafy.schedule.domain.Schedule> schedules = new java.util.ArrayList<>();
+    private List<Schedule> schedules = new ArrayList<>();
+
+    // ✅ [추가 2] 성장 기록 (GrowthRecord) 자동 삭제
+    @Builder.Default
+    @OneToMany(mappedBy = "myPlant", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<GrowthRecord> growthRecords = new ArrayList<>();
+
+    // ✅ [추가 3] 진단 기록 (DiagnosisHistory) 자동 삭제
+    @Builder.Default
+    @OneToMany(mappedBy = "myPlant", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<DiagnosisHistory> diagnosisHistories = new ArrayList<>();
 }

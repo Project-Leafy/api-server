@@ -1,12 +1,9 @@
 package com.leafy.diagnosis.controller;
 
 import com.leafy.diagnosis.dto.DiagnosisResponseDto;
-import com.leafy.diagnosis.dto.PlantIdResponseDto;
 import com.leafy.diagnosis.service.DiagnosisService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -43,6 +40,7 @@ public class DiagnosisController {
         return ResponseEntity.ok(response);
     }
 
+    // ... (나머지 메소드는 그대로) ...
     @Operation(summary = "식물별 진단 기록 목록 조회", description = "특정 식물의 과거 진단 이력을 최신순으로 조회합니다.")
     @GetMapping("/plants/{myPlantId}")
     @PreAuthorize("isAuthenticated()")

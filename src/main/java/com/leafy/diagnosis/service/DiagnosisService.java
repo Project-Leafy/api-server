@@ -140,8 +140,15 @@ public class DiagnosisService {
 
             // 3. 치료법 JSON 변환
             String solutionJson = null;
-            if (topDisease != null && topDisease.details() != null && topDisease.details().treatment() != null) {
-                solutionJson = objectMapper.writeValueAsString(topDisease.details().treatment());
+            // null 체크를 단계별로 안전하게 수행 (Optional을 써도 되지만, 이게 더 직관적일 수 있음)
+            if (topDisease != null && topDisease.details() != null) {
+                var details = topDisease.details();
+
+                // treatment가 있으면 저장
+                if (details.treatment() != null) {
+                    solutionJson = objectMapper.writeValueAsString(details.treatment());
+                }
+                // 혹시 treatment는 없고 description(설명)만 있는 경우도 대비하고 싶다면 여기서 추가 로직 작성 가능
             }
 
             // 4. 건강 여부 및 확률 매핑
@@ -180,31 +187,6 @@ public class DiagnosisService {
             log.error("Failed to parse treatment solution to JSON", e);
             return null;
         }
-
-//        Boolean isHealthy = (result.isHealthy() != null) ? result.isHealthy().binary() : true;
-//        BigDecimal healthProbability = (result.isHealthy() != null) ? result.isHealthy().healthProbability() : null;
-//        BigDecimal isPlantProbability = (result.isPlant() != null) ? result.isPlant().isPlantProbability() : BigDecimal.ZERO;
-//
-//        LocalDate today = LocalDate.now();
-//
-//        // 엔티티 생성 및 저장
-//        DiagnosisHistory history = DiagnosisHistory.builder()
-//                .myPlant(myPlant)
-//                .diagnosisDatetime(LocalDateTime.now())
-//                .requestImageUrl(s3ImageUrl)
-//                .apiAccessToken(response.accessToken())
-//                .isPlantProbability(isPlantProbability)
-//                .isHealthy(isHealthy)
-//                .healthProbability(healthProbability)
-//                .diseaseName(diseaseName)
-//                .diseaseProbability(diseaseProbability)
-//                .solutionDetail(solutionDetail)
-//                .tipDate(today.plusDays(2))   // D+2
-//                .checkDate(today.plusDays(5)) // D+5
-//                .feedbackStep(DiagnosisFeedbackStep.NONE)
-//                .build();
-//
-//        diagnosisHistoryRepository.save(history);
     }
 
     /**

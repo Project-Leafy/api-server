@@ -64,8 +64,7 @@ public class ScheduleService {
             throw new IllegalArgumentException("본인의 식물에만 일정을 추가할 수 있습니다.");
         }
 
-        Integer frequency = convertRecurrenceToDays(request.getRecurrencePattern());
-
+        Integer frequency = request.getFrequencyDays();
         // 4. 스케줄 생성 및 저장
         Schedule schedule = Schedule.builder()
                 .myPlant(myPlant)
@@ -145,5 +144,25 @@ public class ScheduleService {
             case "PRUNE", "PRUNING" -> "가지치기";
             default -> "관리";
         };
+    }
+
+    // ✅ 일정 삭제 서비스 메서드 추가
+    public void deleteSchedule(Long scheduleId) {
+        // 1. 사용자 조회 (보안)
+        String principalName = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userRepository.findByEmail(principalName)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // 2. 스케줄 조회
+        Schedule schedule = scheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new IllegalArgumentException("일정을 찾을 수 없습니다."));
+
+        // 3. 권한 확인 (내 식물의 일정이 맞는지)
+        if (!schedule.getMyPlant().getUser().getUserId().equals(currentUser.getUserId())) {
+            throw new IllegalArgumentException("삭제 권한이 없습니다.");
+        }
+
+        // 4. 삭제
+        scheduleRepository.delete(schedule);
     }
 }
