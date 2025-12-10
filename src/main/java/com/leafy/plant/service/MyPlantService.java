@@ -3,6 +3,7 @@ package com.leafy.plant.service;
 import com.fasterxml.jackson.databind.ObjectMapper; // ✅ 추가
 import com.leafy.diagnosis.repository.DiagnosisHistoryRepository;
 import com.leafy.plant.dto.PlantDetailResponseDto; // ✅ 추가 (반환 타입 변경)
+import com.leafy.global.type.PlantStatus; // PlantStatus import 추가
 import com.leafy.diagnosis.domain.DiagnosisHistory; // ✅ 추가 (Optional 사용)
 import lombok.extern.slf4j.Slf4j; // ✅ 추가
 import com.leafy.plant.dto.MyPlantResponseDto;
@@ -142,6 +143,43 @@ public class MyPlantService {
 
         // 6. DTO로 변환하여 반환
         return MyPlantResponseDto.from(savedMyPlant);
+    }
+
+    /**
+     * 반려식물 상태 업데이트 (HEALTHY 또는 WITHERED)
+     */
+    @Transactional
+    public MyPlantResponseDto updateMyPlantStatus(Long myPlantId, PlantStatus newStatus, User user) {
+        MyPlant myPlant = myPlantRepository.findById(myPlantId)
+                .orElseThrow(() -> new EntityNotFoundException("식물을 찾을 수 없습니다. ID: " + myPlantId));
+
+        if (!myPlant.getUser().getUserId().equals(user.getUserId())) {
+            throw new IllegalArgumentException("권한이 없습니다. 본인 식물만 상태를 변경할 수 있습니다.");
+        }
+
+        // HEALTHY 또는 WITHERED만 허용 (SICK은 진단 서비스에서 자동 설정)
+        if (newStatus == PlantStatus.SICK) {
+            throw new IllegalArgumentException("식물의 상태를 SICK으로 직접 변경할 수 없습니다. 진단 서비스를 이용해주세요.");
+        }
+        
+        myPlant.updateStatus(newStatus); // MyPlant 엔티티의 updateStatus 메서드 호출
+
+        // 변경된 MyPlant 엔티티 저장 (더티 체킹으로 자동 반영될 수 있으나 명시적으로 저장)
+        MyPlant savedMyPlant = myPlantRepository.save(myPlant);
+        return MyPlantResponseDto.from(savedMyPlant);
+    }
+
+    /**
+     * 반려식물 상태 조회
+     */
+    public PlantStatus getMyPlantStatus(Long myPlantId, User user) {
+        MyPlant myPlant = myPlantRepository.findById(myPlantId)
+                .orElseThrow(() -> new EntityNotFoundException("식물을 찾을 수 없습니다. ID: " + myPlantId));
+
+        if (!myPlant.getUser().getUserId().equals(user.getUserId())) {
+            throw new IllegalArgumentException("권한이 없습니다. 본인 식물만 상태를 조회할 수 있습니다.");
+        }
+        return myPlant.getStatus();
     }
 
 }

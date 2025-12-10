@@ -5,6 +5,7 @@ package com.leafy.plant.domain;
 
 import com.leafy.global.common.BaseTimeEntity;
 import com.leafy.user.domain.User; // 1. 다른 도메인의 User 엔티티 import
+import com.leafy.global.type.PlantStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -44,13 +45,19 @@ public class MyPlant extends BaseTimeEntity {
 
     private LocalDate lastWateredDate;
 
+    @Enumerated(EnumType.STRING)
     @Builder.Default
-    @Column(name = "status_code", nullable = false, length = 50)
-    private String statusCode = "HEALTHY"; // (Tip: Enum 관리 추천)
+    @Column(name = "status", nullable = false, length = 20)
+    private PlantStatus status = PlantStatus.HEALTHY;
 
     // ✅ 이 필드가 있는지 확인하고 없다면 추가한다 이다.
     @Column(name = "identification_result", columnDefinition = "TEXT")
     private String identificationResult;
+
+    // ✅ 식물 상태 업데이트 메서드 추가
+    public void updateStatus(PlantStatus newStatus) {
+        this.status = newStatus;
+    }
 
     // ✅ 업데이트 메서드 추가
     public void updateNickname(String nickname) {

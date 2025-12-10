@@ -3,7 +3,7 @@ package com.leafy.recommendation.domain;
 import com.leafy.global.common.BaseTimeEntity;
 import com.leafy.global.type.DifficultyLevel;
 import com.leafy.global.type.LightLevel;
-import com.leafy.global.type.PlantSize;
+import com.leafy.global.type.GrowthSpeed;
 import com.leafy.global.type.WaterFrequency;
 import com.leafy.user.domain.User;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
@@ -44,7 +44,7 @@ public class Recommendation extends BaseTimeEntity {
     private DifficultyLevel userSkill;       // 사용자 숙련도
 
     @Enumerated(EnumType.STRING)
-    private PlantSize preferredSize;         // 선호 식물 크기
+    private GrowthSpeed preferredGrowthSpeed;         // 선호 식물 성장 속도
 
     private boolean hasPet;                  // 반려동물 여부
 
@@ -58,6 +58,10 @@ public class Recommendation extends BaseTimeEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "analyzed_watering_pattern_code")
     private WaterFrequency analyzedWateringPattern;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "analyzed_user_skill_code")
+    private DifficultyLevel analyzedUserSkill;
 
     // 성공/실패 특성은 리스트 형태이므로 JSONB 유지
     @Type(JsonType.class)
@@ -80,18 +84,19 @@ public class Recommendation extends BaseTimeEntity {
     // --- 편의 메서드 ---
 
     // 1. 설문 결과 업데이트 (유저가 설문 다시 했을 때)
-    public void updateSurvey(LightLevel light, WaterFrequency water, DifficultyLevel skill, PlantSize size, boolean hasPet) {
+    public void updateSurvey(LightLevel light, WaterFrequency water, DifficultyLevel skill, GrowthSpeed growthSpeed, boolean hasPet) {
         this.preferredLight = light;
         this.preferredWater = water;
         this.userSkill = skill;
-        this.preferredSize = size;
+        this.preferredGrowthSpeed = growthSpeed;
         this.hasPet = hasPet;
     }
 
     // 2. 분석 결과 업데이트 (배치 스케줄러 용)
-    public void updateAnalysis(LightLevel light, WaterFrequency water, List<String> successTraits, List<String> failureTraits) {
+    public void updateAnalysis(LightLevel light, WaterFrequency water, DifficultyLevel skill, List<String> successTraits, List<String> failureTraits) {
         if (light != null) this.analyzedLightLevel = light;
         if (water != null) this.analyzedWateringPattern = water;
+        if (skill != null) this.analyzedUserSkill = skill;
         if (successTraits != null) this.analyzedSuccessTraits = successTraits;
         if (failureTraits != null) this.analyzedFailureTraits = failureTraits;
         this.lastAnalyzedAt = LocalDateTime.now();

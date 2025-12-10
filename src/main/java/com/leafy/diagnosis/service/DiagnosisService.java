@@ -10,6 +10,7 @@ import com.leafy.diagnosis.repository.DiagnosisHistoryRepository;
 import com.leafy.global.storage.S3UploadService;
 import com.leafy.global.type.DiagnosisFeedbackStep;
 import com.leafy.plant.domain.MyPlant;
+import com.leafy.global.type.PlantStatus;
 import com.leafy.plant.repository.MyPlantRepository;
 import com.leafy.user.domain.User;
 import com.leafy.user.repository.UserRepository;
@@ -102,11 +103,12 @@ public class DiagnosisService {
                 .bodyToMono(PlantIdResponseDto.class)
                 .block();
 
-        // 5. 결과 저장
-        if (apiResponse != null && apiResponse.result() != null) {
-            saveDiagnosisHistory(myPlant, s3ImageUrl, apiResponse);
-        }
-
+                    // 5. 결과 저장
+                    if (apiResponse != null && apiResponse.result() != null) {
+                        saveDiagnosisHistory(myPlant, s3ImageUrl, apiResponse);
+                        // 진단이 이루어졌으므로 식물 상태를 SICK으로 변경
+                        myPlant.updateStatus(PlantStatus.SICK);
+                    }
         return apiResponse;
     }
 

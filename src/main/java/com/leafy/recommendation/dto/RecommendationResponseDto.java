@@ -25,6 +25,9 @@ public class RecommendationResponseDto {
     // 식물 사진 URL (Card UI에 표시)
     private String officialImageUrl;
 
+    // 식물 설명
+    private String description;
+
     // 추천 이유 태그 목록 (예: ["#초보자용", "#반려동물안전", "#물주기쉬움"])
     private List<String> tags;
 

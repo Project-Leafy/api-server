@@ -4,6 +4,7 @@ import com.leafy.global.type.DifficultyLevel;
 import com.leafy.global.type.LightLevel;
 import com.leafy.global.type.PlantSize;
 import com.leafy.global.type.WaterFrequency;
+import com.leafy.global.type.GrowthSpeed;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -19,8 +20,8 @@ public class RecommendationRequest {
     // 3. 식물 키우기 숙련도 (EASY, NORMAL, HARD)
     private DifficultyLevel userSkill;
 
-    // 4. 선호하는 식물 크기 (SMALL, MEDIUM, LARGE)
-    private PlantSize preferredSize;
+    // 4. 선호하는 식물 성장 속도 (SLOW, NORMAL, FAST)
+    private GrowthSpeed growthSpeed;
 
     // 5. 반려동물 여부 (true/false)
     private boolean hasPet;
