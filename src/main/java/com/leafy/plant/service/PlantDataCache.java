@@ -36,7 +36,7 @@ public class PlantDataCache {
     @PostConstruct
     public void load() {
         try {
-            log.info("Attempting to load plant data from S3...");
+            log.info("[Cache] S3에서 식물 데이터 캐싱을 시도합니다...");
             try (InputStream inputStream = s3Client.getObject(GetObjectRequest.builder()
                     .bucket(bucketName)
                     .key(S3_KEY)
@@ -45,22 +45,22 @@ public class PlantDataCache {
                 List<PlantDataDto> dtoList = objectMapper.readValue(inputStream, new TypeReference<>() {});
                 plantMap.putAll(dtoList.stream()
                         .collect(Collectors.toMap(PlantDataDto::getId, Function.identity())));
-                log.info("Successfully loaded and cached {} plant species from S3.", plantMap.size());
+                log.info("[Cache] S3로부터 {}개의 식물 데이터를 성공적으로 캐싱했습니다.", plantMap.size());
             }
         } catch (Exception s3Exception) {
-            log.warn("S3-WARN: Failed to load plant data from S3. Reason: {}. Attempting to load from local fallback.", s3Exception.getMessage());
+            log.warn("[Cache-WARN] S3 캐싱 실패. 로컬 백업 파일로 전환합니다. (S3 오류: {})", s3Exception.getMessage());
             try {
-                log.info("Attempting to load plant data from local fallback file: /data/final_plants.json");
+                log.info("[Cache] 로컬 백업 파일 /data/final_plants.json 에서 캐싱을 시도합니다...");
                 InputStream inputStream = new TypeReference<>() {}.getClass().getResourceAsStream("/data/final_plants.json");
                 if (inputStream == null) {
-                    throw new RuntimeException("Fallback resource not found: /data/final_plants.json");
+                    throw new RuntimeException("로컬 백업 파일을 찾을 수 없습니다: /data/final_plants.json");
                 }
                 List<PlantDataDto> dtoList = objectMapper.readValue(inputStream, new TypeReference<>() {});
                 plantMap.putAll(dtoList.stream()
                         .collect(Collectors.toMap(PlantDataDto::getId, Function.identity())));
-                log.info("Successfully loaded and cached {} plant species from local fallback.", plantMap.size());
+                log.info("[Cache] 로컬 백업으로부터 {}개의 식물 데이터를 성공적으로 캐싱했습니다.", plantMap.size());
             } catch (Exception fallbackException) {
-                log.error("FATAL: Failed to load plant data from both S3 and local fallback. Recommendation system will be unavailable.", fallbackException);
+                log.error("[Cache-FATAL] S3와 로컬 백업 파일 모두 캐싱에 실패했습니다. 추천 시스템을 사용할 수 없습니다.", fallbackException);
             }
         }
     }
