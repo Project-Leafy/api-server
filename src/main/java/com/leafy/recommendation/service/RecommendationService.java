@@ -118,16 +118,16 @@ public class RecommendationService {
         int score = 0;
         switch (userLight) {
             case LOW:
-                if (plantLight.contains("낮은")) score = 25;
-                else if (plantLight.contains("중간")) score = 15;
+                if (plantLight.equalsIgnoreCase("low")) score = 25;
+                else if (plantLight.equalsIgnoreCase("medium")) score = 15;
                 break;
             case MEDIUM:
-                if (plantLight.contains("중간")) score = 25;
-                else if (plantLight.contains("낮은") || plantLight.contains("높은")) score = 15;
+                if (plantLight.equalsIgnoreCase("medium")) score = 25;
+                else if (plantLight.equalsIgnoreCase("low") || plantLight.equalsIgnoreCase("high")) score = 15;
                 break;
             case HIGH:
-                if (plantLight.contains("높은")) score = 25;
-                else if (plantLight.contains("중간")) score = 15;
+                if (plantLight.equalsIgnoreCase("high")) score = 25;
+                else if (plantLight.equalsIgnoreCase("medium")) score = 15;
                 break;
         }
         return score;
@@ -164,16 +164,16 @@ public class RecommendationService {
         int score = 0;
         switch (userSkill) {
             case EASY:
-                if (plantDifficulty.contains("초보자")) score = 25;
-                else if (plantDifficulty.contains("경험자") || plantDifficulty.contains("보통")) score = 15;
+                if (plantDifficulty.equalsIgnoreCase("easy")) score = 25;
+                else if (plantDifficulty.equalsIgnoreCase("normal")) score = 15;
                 break;
             case NORMAL:
-                if (plantDifficulty.contains("경험자") || plantDifficulty.contains("보통")) score = 25;
-                else if (plantDifficulty.contains("초보자") || plantDifficulty.contains("전문가")) score = 15;
+                if (plantDifficulty.equalsIgnoreCase("normal")) score = 25;
+                else if (plantDifficulty.equalsIgnoreCase("easy") || plantDifficulty.equalsIgnoreCase("hard")) score = 15;
                 break;
             case HARD:
-                if (plantDifficulty.contains("전문가")) score = 25;
-                else if (plantDifficulty.contains("경험자") || plantDifficulty.contains("보통")) score = 15;
+                if (plantDifficulty.equalsIgnoreCase("hard")) score = 25;
+                else if (plantDifficulty.equalsIgnoreCase("normal")) score = 15;
                 break;
         }
         return score;
@@ -184,16 +184,16 @@ public class RecommendationService {
         int score = 0;
         switch (userSpeed) {
             case SLOW:
-                if (plantSpeed.contains("느림")) score = 25;
-                else if (plantSpeed.contains("보통")) score = 15;
+                if (plantSpeed.equalsIgnoreCase("slow")) score = 25;
+                else if (plantSpeed.equalsIgnoreCase("normal")) score = 15;
                 break;
             case NORMAL:
-                if (plantSpeed.contains("보통")) score = 25;
-                else if (plantSpeed.contains("느림") || plantSpeed.contains("빠름")) score = 15;
+                if (plantSpeed.equalsIgnoreCase("normal")) score = 25;
+                else if (plantSpeed.equalsIgnoreCase("slow") || plantSpeed.equalsIgnoreCase("fast")) score = 15;
                 break;
             case FAST:
-                if (plantSpeed.contains("빠름")) score = 25;
-                else if (plantSpeed.contains("보통")) score = 15;
+                if (plantSpeed.equalsIgnoreCase("fast")) score = 25;
+                else if (plantSpeed.equalsIgnoreCase("normal")) score = 15;
                 break;
         }
         return score;
@@ -201,9 +201,9 @@ public class RecommendationService {
 
     private String getDifficultyTag(String plantDifficulty) {
         if (plantDifficulty == null || plantDifficulty.isEmpty()) return null;
-        if (plantDifficulty.contains("초보자")) return "#초보자용";
-        if (plantDifficulty.contains("경험자") || plantDifficulty.contains("보통")) return "#경험자용";
-        if (plantDifficulty.contains("전문가")) return "#전문가용";
+        if (plantDifficulty.equalsIgnoreCase("easy")) return "#초보자용";
+        if (plantDifficulty.equalsIgnoreCase("normal")) return "#경험자용";
+        if (plantDifficulty.equalsIgnoreCase("hard")) return "#전문가용";
         return null;
     }
 
