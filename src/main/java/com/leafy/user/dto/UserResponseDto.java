@@ -5,6 +5,8 @@ import com.leafy.user.domain.User;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Builder
 public class UserResponseDto {
@@ -16,6 +18,7 @@ public class UserResponseDto {
     private Integer currentPlantsCount; // 현재 키우는 식물 수
     private Boolean onboardingStatus;   // 온보딩 완료 여부 (게스트/유저 구분용)
     private Role role;
+    private LocalDateTime createdAt;    // 서비스 가입일 (회원 생성 시각)
 
     // User 엔티티를 받아서 DTO로 변환하는 정적 메서드 (편의성)
     public static UserResponseDto from(User user) {
@@ -27,6 +30,7 @@ public class UserResponseDto {
                 .currentPlantsCount(user.getCurrentPlantsCount())
                 .onboardingStatus(user.getOnboardingStatus())
                 .role(user.getRole())
+                .createdAt(user.getCreatedAt())
                 .build();
     }
 }
