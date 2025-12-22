@@ -96,3 +96,7 @@ kakao: # Kakao API 설정 추가
     base-url: https://kapi.kakao.com
   auth:
     base-url: https://kauth.kakao.com
+
+logging:
+  level:
+    com.leafy: DEBUG
