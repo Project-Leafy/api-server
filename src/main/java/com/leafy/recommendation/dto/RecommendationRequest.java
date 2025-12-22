@@ -7,8 +7,10 @@ import com.leafy.global.type.WaterFrequency;
 import com.leafy.global.type.GrowthSpeed;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
+@Setter
 @NoArgsConstructor
 public class RecommendationRequest {
     // 1. 채광량 (LOW, MEDIUM, HIGH)
