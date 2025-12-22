@@ -116,18 +116,23 @@ public class RecommendationService {
     private int calculateLightScore(String plantLight, LightLevel userLight) {
         if (userLight == null || plantLight == null || plantLight.isEmpty()) return 0;
         int score = 0;
+
+        boolean hasLow = plantLight.contains("낮은");
+        boolean hasMedium = plantLight.contains("중간");
+        boolean hasHigh = plantLight.contains("높은");
+
         switch (userLight) {
             case LOW:
-                if (plantLight.equalsIgnoreCase("low")) score = 25;
-                else if (plantLight.equalsIgnoreCase("medium")) score = 15;
+                if (hasLow) score = 25;
+                else if (hasMedium) score = 15;
                 break;
             case MEDIUM:
-                if (plantLight.equalsIgnoreCase("medium")) score = 25;
-                else if (plantLight.equalsIgnoreCase("low") || plantLight.equalsIgnoreCase("high")) score = 15;
+                if (hasMedium) score = 25;
+                else if (hasLow || hasHigh) score = 15;
                 break;
             case HIGH:
-                if (plantLight.equalsIgnoreCase("high")) score = 25;
-                else if (plantLight.equalsIgnoreCase("medium")) score = 15;
+                if (hasHigh) score = 25;
+                else if (hasMedium) score = 15;
                 break;
         }
         return score;
@@ -164,16 +169,16 @@ public class RecommendationService {
         int score = 0;
         switch (userSkill) {
             case EASY:
-                if (plantDifficulty.equalsIgnoreCase("easy")) score = 25;
-                else if (plantDifficulty.equalsIgnoreCase("normal")) score = 15;
+                if (plantDifficulty.equalsIgnoreCase("초보자") || plantDifficulty.equalsIgnoreCase("easy")) score = 25;
+                else if (plantDifficulty.equalsIgnoreCase("경험자") || plantDifficulty.equalsIgnoreCase("normal") || plantDifficulty.equalsIgnoreCase("보통") || plantDifficulty.equalsIgnoreCase("필요함")) score = 15;
                 break;
             case NORMAL:
-                if (plantDifficulty.equalsIgnoreCase("normal")) score = 25;
-                else if (plantDifficulty.equalsIgnoreCase("easy") || plantDifficulty.equalsIgnoreCase("hard")) score = 15;
+                if (plantDifficulty.equalsIgnoreCase("경험자") || plantDifficulty.equalsIgnoreCase("normal") || plantDifficulty.equalsIgnoreCase("보통") || plantDifficulty.equalsIgnoreCase("필요함")) score = 25;
+                else if (plantDifficulty.equalsIgnoreCase("초보자") || plantDifficulty.equalsIgnoreCase("easy") || plantDifficulty.equalsIgnoreCase("전문가") || plantDifficulty.equalsIgnoreCase("hard")) score = 15;
                 break;
             case HARD:
-                if (plantDifficulty.equalsIgnoreCase("hard")) score = 25;
-                else if (plantDifficulty.equalsIgnoreCase("normal")) score = 15;
+                if (plantDifficulty.equalsIgnoreCase("전문가") || plantDifficulty.equalsIgnoreCase("hard")) score = 25;
+                else if (plantDifficulty.equalsIgnoreCase("경험자") || plantDifficulty.equalsIgnoreCase("normal") || plantDifficulty.equalsIgnoreCase("보통") || plantDifficulty.equalsIgnoreCase("필요함")) score = 15;
                 break;
         }
         return score;
@@ -184,16 +189,16 @@ public class RecommendationService {
         int score = 0;
         switch (userSpeed) {
             case SLOW:
-                if (plantSpeed.equalsIgnoreCase("slow")) score = 25;
-                else if (plantSpeed.equalsIgnoreCase("normal")) score = 15;
+                if (plantSpeed.equalsIgnoreCase("느림") || plantSpeed.equalsIgnoreCase("slow")) score = 25;
+                else if (plantSpeed.equalsIgnoreCase("보통") || plantSpeed.equalsIgnoreCase("normal")) score = 15;
                 break;
             case NORMAL:
-                if (plantSpeed.equalsIgnoreCase("normal")) score = 25;
-                else if (plantSpeed.equalsIgnoreCase("slow") || plantSpeed.equalsIgnoreCase("fast")) score = 15;
+                if (plantSpeed.equalsIgnoreCase("보통") || plantSpeed.equalsIgnoreCase("normal")) score = 25;
+                else if (plantSpeed.equalsIgnoreCase("느림") || plantSpeed.equalsIgnoreCase("slow") || plantSpeed.equalsIgnoreCase("빠름") || plantSpeed.equalsIgnoreCase("fast")) score = 15;
                 break;
             case FAST:
-                if (plantSpeed.equalsIgnoreCase("fast")) score = 25;
-                else if (plantSpeed.equalsIgnoreCase("normal")) score = 15;
+                if (plantSpeed.equalsIgnoreCase("빠름") || plantSpeed.equalsIgnoreCase("fast")) score = 25;
+                else if (plantSpeed.equalsIgnoreCase("보통") || plantSpeed.equalsIgnoreCase("normal")) score = 15;
                 break;
         }
         return score;
