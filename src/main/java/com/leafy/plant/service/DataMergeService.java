@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.leafy.global.storage.S3UploadService;
+import com.leafy.global.storage.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,7 +23,7 @@ import java.util.*;
 public class DataMergeService {
 
     private final ObjectMapper objectMapper;
-    private final S3UploadService s3UploadService;
+    private final FileStorageService fileStorageService;
 
     @Value("${openai.api-key}")
     private String openAiKey;
@@ -177,7 +177,7 @@ public class DataMergeService {
                     finalArray.size(), totalMatches.size(), nOnlyCount, aOnlyCount);
 
             try (FileInputStream fis = new FileInputStream(resultFile)) {
-                String s3Url = s3UploadService.upload(fis, "merge_plants.json", resultFile.length(), "application/json", "plants");
+                String s3Url = fileStorageService.upload(fis, "merge_plants.json", resultFile.length(), "application/json", "plants");
                 log.info("🚀 S3 업로드 완료: {}", s3Url);
             }
 

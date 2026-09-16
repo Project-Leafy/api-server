@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.leafy.global.storage.S3UploadService;
+import com.leafy.global.storage.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,7 +25,7 @@ import java.util.Map;
 public class LlmContentService {
 
     private final ObjectMapper objectMapper;
-    private final S3UploadService s3UploadService;
+    private final FileStorageService fileStorageService;
 
     @Value("${openai.api-key}")
     private String openAiKey;
@@ -142,7 +142,7 @@ public class LlmContentService {
             log.info("✅ 최종 JSON 생성 완료 ({}개)", finalList.size());
 
             try (FileInputStream fis = new FileInputStream(finalFile)) {
-                String s3Url = s3UploadService.uploadFixed(
+                String s3Url = fileStorageService.uploadFixed(
                         fis, "final_plants.json", finalFile.length(), "application/json", "plants"
                 );
                 log.info("🚀 S3 업로드 성공! URL: {}", s3Url);
@@ -157,7 +157,7 @@ public class LlmContentService {
         try {
             byte[] bytes = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(jsonNode);
             ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
-            s3UploadService.uploadFixed(bis, fileName, bytes.length, "application/json", "plants");
+            fileStorageService.uploadFixed(bis, fileName, bytes.length, "application/json", "plants");
         } catch (Exception e) {
             log.error("⚠️ 업로드 실패 (파일: {})", fileName, e);
         }

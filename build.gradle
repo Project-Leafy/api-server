@@ -34,6 +34,13 @@ dependencies {
     // 입력값 검증 (@NotNull, @Email 등 사용) - 이상한 데이터 방어
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 
+    // 앱 상태/메트릭 노출 (health, metrics) - 모니터링 수집용
+    // 공개 포트(8080)가 아닌 별도 관리 포트로 분리해 내부망에만 노출한다.
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    // Prometheus 스크레이프용 메트릭 포맷 (/actuator/prometheus)
+    runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
+
 
     // =================================================================
     // 2. 데이터베이스 & JPA (Persistence Layer)
@@ -68,8 +75,8 @@ dependencies {
     // =================================================================
     // 4. 인프라 & 외부 연동 (Infra & External)
     // =================================================================
-    // AWS S3 연동 (반려식물 사진 업로드 저장소)
-    implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:3.1.1'
+    // 이미지 저장은 로컬 디스크를 사용한다 (S3/CloudFront 연동 제거).
+    // 이 앱은 공개 노출하지 않기로 했으므로 외부 자격증명을 두지 않는다.
 
     // WebClient (비동기 HTTP 클라이언트)
     // - 추후 추천 알고리즘 서버나 공공데이터 포털 API 호출 시 사용
@@ -88,7 +95,7 @@ dependencies {
     // 5. 문서화 & 코드 유틸리티 (Docs & Utils)
     // =================================================================
     // Swagger UI (API 명세서 자동 생성) - 최신 스프링 부트 3.x 호환 버전
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6'
 
     // Lombok (반복 코드 제거) - 컴파일 시에만 관여하고 빠짐
     compileOnly 'org.projectlombok:lombok'

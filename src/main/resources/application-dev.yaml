@@ -31,20 +31,6 @@ plant:
   id:
     api-key: ${PLANT_ID_API_KEY:}
 
-cloudfront:
-  url: http://localhost:8080 # 로컬 테스트용 URL
-
-cloud:
-  aws:
-    credentials:
-      access-key: ${AWS_ACCESS_KEY}
-      secret-key: ${FN+4lU3NvsN3PK9vk5xOL0/wm7dQkKO9sFPO1j5h}
-
-
-aws:
-  s3:
-    bucket-name: ${S3_BUCKET_NAME:}
-
 # [핵핵심] 프론트엔드 리다이렉트 주소 설정
 app:
   frontend-url: http://localhost/callback.html # 로컬 프론트엔드 URL

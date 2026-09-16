@@ -12,14 +12,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class DictionaryController {
 
-    @Value("${cloudfront.url}") // application.properties에 설정된 URL
-    private String cloudfrontUrl;
+    // S3/CloudFront 를 걷어내고 앱이 직접 서빙하므로, 업로드 저장소의 공개 URL을 쓴다.
+    @Value("${app.upload.public-base-url}")
+    private String publicBaseUrl;
 
     // 프론트엔드가 호출할 API
     @GetMapping("/url")
     public ResponseEntity<String> getDictionaryUrl() {
         // 고정된 파일명(final_plants.json)의 전체 경로를 반환
-        String fullUrl = cloudfrontUrl + "/plants/final_plants.json";
+        String fullUrl = publicBaseUrl + "/plants/final_plants.json";
         return ResponseEntity.ok(fullUrl);
     }
 }

@@ -7,8 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import com.leafy.global.storage.FileStorageService;
 
 import jakarta.annotation.PostConstruct;
 import java.io.InputStream;
@@ -24,45 +23,44 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PlantDataCache {
 
-    private final S3Client s3Client;
+    private final FileStorageService fileStorageService;
     private final ObjectMapper objectMapper;
 
-    @Value("${aws.s3.bucket-name}")
-    private String bucketName;
-    private static final String S3_KEY = "plants/final_plants.json";
+    /** 저장소에 보관되는 식물 데이터 파일의 키. */
+    public static final String PLANT_DATA_KEY = "plants/final_plants.json";
 
     private final Map<Long, PlantDataDto> plantMap = new ConcurrentHashMap<>();
 
     @PostConstruct
     public void load() {
-        try {
-            log.info("[Cache] S3에서 식물 데이터 캐싱을 시도합니다...");
-            try (InputStream inputStream = s3Client.getObject(GetObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(S3_KEY)
-                    .build())) {
-
-                List<PlantDataDto> dtoList = objectMapper.readValue(inputStream, new TypeReference<>() {});
-                plantMap.putAll(dtoList.stream()
-                        .collect(Collectors.toMap(PlantDataDto::getId, Function.identity())));
-                log.info("[Cache] S3로부터 {}개의 식물 데이터를 성공적으로 캐싱했습니다.", plantMap.size());
+        // 1순위: 저장소에 있는 파일 (운영 중 갱신된 최신본)
+        try (InputStream inputStream = fileStorageService.read(PLANT_DATA_KEY)) {
+            if (inputStream != null) {
+                cacheFrom(inputStream);
+                log.info("[Cache] 저장소로부터 {}개의 식물 데이터를 캐싱했습니다.", plantMap.size());
+                return;
             }
-        } catch (Exception s3Exception) {
-            log.warn("[Cache-WARN] S3 캐싱 실패. 로컬 백업 파일로 전환합니다. (S3 오류: {})", s3Exception.getMessage());
-            try {
-                log.info("[Cache] 로컬 백업 파일 /data/final_plants.json 에서 캐싱을 시도합니다...");
-                InputStream inputStream = new TypeReference<>() {}.getClass().getResourceAsStream("/data/final_plants.json");
-                if (inputStream == null) {
-                    throw new RuntimeException("로컬 백업 파일을 찾을 수 없습니다: /data/final_plants.json");
-                }
-                List<PlantDataDto> dtoList = objectMapper.readValue(inputStream, new TypeReference<>() {});
-                plantMap.putAll(dtoList.stream()
-                        .collect(Collectors.toMap(PlantDataDto::getId, Function.identity())));
-                log.info("[Cache] 로컬 백업으로부터 {}개의 식물 데이터를 성공적으로 캐싱했습니다.", plantMap.size());
-            } catch (Exception fallbackException) {
-                log.error("[Cache-FATAL] S3와 로컬 백업 파일 모두 캐싱에 실패했습니다. 추천 시스템을 사용할 수 없습니다.", fallbackException);
-            }
+            log.info("[Cache] 저장소에 식물 데이터가 없어 번들된 기본 데이터를 사용합니다.");
+        } catch (Exception e) {
+            log.warn("[Cache-WARN] 저장소 읽기 실패. 번들된 기본 데이터로 전환합니다. (오류: {})", e.getMessage());
         }
+
+        // 2순위: jar에 번들된 기본 데이터
+        try (InputStream inputStream = getClass().getResourceAsStream("/data/final_plants.json")) {
+            if (inputStream == null) {
+                throw new IllegalStateException("번들된 데이터 파일을 찾을 수 없습니다: /data/final_plants.json");
+            }
+            cacheFrom(inputStream);
+            log.info("[Cache] 번들 데이터로부터 {}개의 식물 데이터를 캐싱했습니다.", plantMap.size());
+        } catch (Exception e) {
+            log.error("[Cache-FATAL] 식물 데이터 캐싱에 모두 실패했습니다. 추천 시스템을 사용할 수 없습니다.", e);
+        }
+    }
+
+    private void cacheFrom(InputStream inputStream) throws java.io.IOException {
+        List<PlantDataDto> dtoList = objectMapper.readValue(inputStream, new TypeReference<>() {});
+        plantMap.putAll(dtoList.stream()
+                .collect(Collectors.toMap(PlantDataDto::getId, Function.identity())));
     }
 
     public PlantDataDto getPlantById(Long id) {
@@ -71,5 +69,12 @@ public class PlantDataCache {
 
     public Collection<PlantDataDto> getAllPlants() {
         return plantMap.values();
+    }
+
+    public void addPlant(PlantDataDto newPlant) {
+        if (newPlant != null && newPlant.getId() != null) {
+            plantMap.put(newPlant.getId(), newPlant);
+            log.info("[Cache] 새로운 식물 '{}'(ID:{})가 메모리 내 캐시에 추가되었습니다.", newPlant.getKoreanName(), newPlant.getId());
+        }
     }
 }

@@ -50,12 +50,13 @@ spring:
             user-info-uri: https://kapi.kakao.com/v2/user/me
             user-name-attribute: id
 
-  cloud:
-    aws:
-      region:
-        static: ap-northeast-2
-      stack:
-        auto: false
+# --- 업로드 파일 저장 (S3/CloudFront 대체) ---
+# 컨테이너를 재생성해도 파일이 남으려면 app.upload.dir 에 볼륨을 물려야 한다.
+app:
+  upload:
+    dir: ${UPLOAD_DIR:./uploads}
+    url-path: ${UPLOAD_URL_PATH:/files}
+    public-base-url: ${UPLOAD_PUBLIC_BASE_URL:http://localhost:8080/files}
 
 # 3. 서버 기본 설정
 server:
@@ -85,7 +86,7 @@ plant:
     base-url: https://plant.id/api/v3 # API 기본 URL은 공통
 kma:
   api:
-    url: http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst # 기상청 API URL
+    url: http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst # 기상청 API URL
 nongsaro: # Nongsaro API 설정 추가
   api:
     base-url: http://api.nongsaro.go.kr/service/garden/gardenList
@@ -100,3 +101,34 @@ kakao: # Kakao API 설정 추가
 logging:
   level:
     com.leafy: DEBUG
+    ACCESS: INFO
+
+  # --- 로그 포맷 ---
+  # 비워두면 기존 텍스트 포맷, json 으로 바꾸면 한 줄 JSON으로 출력된다.
+  # 수집 계층(fluentd)이 아직 텍스트를 파싱하고 있으므로, 양쪽 전환 시점을 맞추기 위해
+  # 환경변수 LOG_FORMAT 하나로 켜고 끌 수 있게 했다.
+  #   텍스트: (설정 없음, 기본값)
+  #   JSON  : LOG_FORMAT=com.leafy.global.logging.LeafyJsonFormatter
+  structured:
+    format:
+      console: ${LOG_FORMAT:}
+
+  # 텍스트 포맷일 때의 타임스탬프. ISO8601 + offset 으로 통일한다.
+  pattern:
+    dateformat: yyyy-MM-dd'T'HH:mm:ss.SSSXXX
+
+# --- 모니터링 (Actuator) ---
+# 공개 포트(8080)에 붙이면 설정값·환경변수 이름 같은 민감한 정보가
+# 사용자 트래픽과 같은 문으로 나간다. 별도 관리 포트로 분리해 내부망에만 노출한다.
+# 이 포트는 컨테이너 밖(호스트)으로 publish 하지 않아야 한다.
+management:
+  server:
+    port: ${MANAGEMENT_SERVER_PORT:9090}
+  endpoints:
+    web:
+      exposure:
+        # 필요한 것만 연다. env/configprops 등은 민감해 기본적으로 닫아 둔다.
+        include: ${MANAGEMENT_ENDPOINTS:health,info,metrics,prometheus}
+  endpoint:
+    health:
+      show-details: ${MANAGEMENT_HEALTH_DETAILS:when-authorized}

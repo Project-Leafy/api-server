@@ -30,33 +30,45 @@ public class WeatherService {
     private final ObjectMapper objectMapper;
 
     /**
-     * 오늘 비가 오는지 확인 (True: 비 옴 / False: 맑음)
+     * 현재 비가 오는지 확인 (True: 비 옴 / False: 맑음)
      */
-    public boolean willItRainToday(Double lat, Double lon) {
-        if (lat == null || lon == null) return false;
+    public boolean isRainingNow(Double lat, Double lon) {
+        if (lat == null || lon == null) {
+            log.warn("[Weather] 위도 또는 경도값이 없어 날씨를 확인할 수 없습니다.");
+            return false;
+        }
 
         try {
             // 1. 좌표 변환
             KmaGridConverter.GridCoordinate grid = KmaGridConverter.convertToGrid(lat, lon);
+            log.info("[Weather] 사용자 좌표 변환: (lat:{}, lon:{}) -> (nx:{}, ny:{})", lat, lon, grid.getX(), grid.getY());
 
-            // 2. API 호출 파라미터 설정 (오늘 날짜, 아침 05시 기준 예보)
-            String baseDate = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-            String baseTime = "0500"; // 05시 발표 예보가 정확도가 높음
+            // 2. API 호출 파라미터 설정 (현재 날짜, 가장 최근 실황 시간)
+            // 초단기실황은 매시 40분마다 생성되므로, 현재 시간 기준 가장 최신 데이터를 조회합니다.
+            LocalDate nowDate = LocalDate.now();
+            LocalTime nowTime = LocalTime.now();
+            // 40분 이전이면 이전 시간대의 데이터를 요청
+            if (nowTime.getMinute() <= 40) {
+                nowTime = nowTime.minusHours(1);
+            }
+            String baseDate = nowDate.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+            String baseTime = nowTime.format(DateTimeFormatter.ofPattern("HH00"));
+            log.debug("[Weather] API 요청 시간 설정: base_date={}, base_time={}", baseDate, baseTime);
 
             // 3. 인코딩 문제 해결을 위한 URI Factory 설정
-            DefaultUriBuilderFactory factory = new DefaultUriBuilderFactory(kmaApiUrl); // 주입받은 URL 사용
-            factory.setEncodingMode(DefaultUriBuilderFactory.EncodingMode.NONE); // 키가 이미 인코딩된 경우
+            DefaultUriBuilderFactory factory = new DefaultUriBuilderFactory(kmaApiUrl);
+            factory.setEncodingMode(DefaultUriBuilderFactory.EncodingMode.NONE);
 
             WebClient webClient = webClientBuilder
                     .uriBuilderFactory(factory)
-                    .baseUrl(kmaApiUrl) // 주입받은 URL 사용
+                    .baseUrl(kmaApiUrl)
                     .build();
 
             String response = webClient.get()
                     .uri(uriBuilder -> uriBuilder
                             .queryParam("serviceKey", serviceKey)
                             .queryParam("pageNo", "1")
-                            .queryParam("numOfRows", "100") // 넉넉하게 조회
+                            .queryParam("numOfRows", "10") // 실황은 데이터 종류가 적음
                             .queryParam("dataType", "JSON")
                             .queryParam("base_date", baseDate)
                             .queryParam("base_time", baseTime)
@@ -67,16 +79,18 @@ public class WeatherService {
                     .bodyToMono(String.class)
                     .block();
 
-            // 4. 결과 파싱 (POP: 강수확률, PTY: 강수형태)
-            return parseRainCheck(response);
+            log.debug("[Weather] API 응답 수신: {}", response);
+
+            // 4. 결과 파싱 (PTY: 강수형태)
+            return parseIsRaining(response);
 
         } catch (Exception e) {
-            log.error("기상청 API 호출 실패 (기본값 False 반환): {}", e.getMessage());
-            return false; // 에러 나면 그냥 맑음으로 처리 (안전하게)
+            log.error("[Weather] 기상청 API 호출 실패 (기본값 '맑음'으로 처리): {}", e.getMessage());
+            return false;
         }
     }
 
-    private boolean parseRainCheck(String jsonResponse) {
+    private boolean parseIsRaining(String jsonResponse) {
         try {
             JsonNode root = objectMapper.readTree(jsonResponse);
             JsonNode items = root.path("response").path("body").path("items").path("item");
@@ -84,21 +98,24 @@ public class WeatherService {
             if (items.isArray()) {
                 for (JsonNode item : items) {
                     String category = item.path("category").asText();
-                    String fcstValue = item.path("fcstValue").asText();
+                    // [수정] 실황 데이터는 'fcstValue'가 아닌 'obsrValue' 사용
+                    String obsrValue = item.path("obsrValue").asText();
 
-                    // POP: 강수확률 (0~100) -> 60% 이상이면 비 온다고 판단
-                    if ("POP".equals(category)) {
-                        if (Integer.parseInt(fcstValue) >= 60) return true;
-                    }
-                    // PTY: 강수형태 (0:없음, 1:비, 2:비/눈, 3:눈, 4:소나기)
+                    // PTY: 강수형태 (0:없음, 1:비, 2:비/눈, 3:눈, 4:소나기, 5:빗방울, 6:빗방울/눈날림, 7:눈날림)
                     if ("PTY".equals(category)) {
-                        if (!"0".equals(fcstValue)) return true;
+                        log.info("[Weather] 강수형태(PTY) 확인: {}", obsrValue);
+                        // 0이 아니면 어떤 형태든 강수가 있는 것
+                        if (!"0".equals(obsrValue)) {
+                            log.info("[Weather] 결과: 비 또는 눈이 오는 것으로 판단됩니다.");
+                            return true;
+                        }
                     }
                 }
             }
         } catch (Exception e) {
-            log.error("날씨 데이터 파싱 실패", e);
+            log.error("[Weather] 날씨 데이터 파싱 실패", e);
         }
+        log.info("[Weather] 결과: 강수 없음(맑음)으로 판단됩니다.");
         return false;
     }
 }

@@ -150,3 +150,5 @@ gradle-app.setting
 ### Gradle Patch ###
 # Java heap dump
 *.hprof
+# 로컬 업로드 저장소 (S3 대체)
+uploads/

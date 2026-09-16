@@ -59,17 +59,27 @@ public class NotificationScheduler {
             // 1. 날씨 확인 (사용자 위치 기반)
             boolean isRaining = false;
             if (user.getLatitude() != null && user.getLongitude() != null) {
-                isRaining = weatherService.willItRainToday(user.getLatitude(), user.getLongitude());
+                // [수정] 초단기 실황 API 호출로 변경
+                isRaining = weatherService.isRainingNow(user.getLatitude(), user.getLongitude());
             }
 
-            // 2. 스마트 메시지 생성 (날씨 + 일정 타입 고려)
+            // [수정] 2. 물주기 일정이고 비가 올 경우, 알림을 보내지 않고 일정을 하루 연기
+            if ("WATERING".equals(type) && isRaining) {
+                schedule.updateNextDueDate(today.plusDays(1));
+                log.info("[Scheduler] 물주기 일정 연기: User={}, Plant='{}'의 물주기 일정을 비로 인해 내일로 연기합니다.", user.getUserId(), plantNickname);
+                continue; // 다음 스케줄로 넘어감
+            }
+
+            // 3. (비가 오지 않거나, 물주기가 아닌 경우) 스마트 메시지 생성 및 발송
             String message = createSmartMessage(type, plantNickname, isRaining);
 
-            // 3. 발송
             if (kakaoMessageService.sendSelfMessage(user, message)) {
                 schedule.changeNotificationStatus("SENT");
-                saveNotificationHistory(user, schedule, message, type); // 오버로딩된 메서드 사용
+                saveNotificationHistory(user, schedule, message, type);
                 successCount++;
+                log.info("[Scheduler] 알림 발송 성공: User={}, Type={}, Plant='{}'", user.getUserId(), type, plantNickname);
+            } else {
+                log.error("[Scheduler] 알림 발송 실패: User={}, Type={}, Plant='{}'", user.getUserId(), type, plantNickname);
             }
         }
         log.info("[Scheduler] 알림 발송 완료. 성공: {}건", successCount);

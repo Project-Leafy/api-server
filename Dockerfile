@@ -16,11 +16,24 @@ RUN gradle bootJar -x test --no-daemon
 FROM amazoncorretto:17-alpine
 WORKDIR /app
 
+# 타임존을 고정한다.
+# alpine 기본값은 UTC 라서, 지정하지 않으면 로그 타임스탬프가 +00:00 으로 찍힌다.
+# 수집 계층·대시보드와 시각 해석이 어긋나므로 명시한다. (TZ 환경변수로 덮어쓸 수 있다)
+RUN apk add --no-cache tzdata
+ENV TZ=Asia/Seoul
+
+# 업로드 파일 저장 경로. 컨테이너를 재생성해도 남으려면 볼륨을 물려야 한다.
+ENV UPLOAD_DIR=/app/uploads
+RUN mkdir -p /app/uploads
+VOLUME ["/app/uploads"]
+
 # 빌드 단계에서 생성된 jar 파일만 가져옴
 COPY --from=builder /app/build/libs/*.jar app.jar
 
-# 컨테이너가 8080 포트를 쓴다는 것을 명시
+# 8080 = 애플리케이션, 9090 = 모니터링(Actuator)
+# 9090 은 내부망 전용이므로 호스트로 publish 하지 말 것.
 EXPOSE 8080
+EXPOSE 9090
 
 # 실행 명령어
 ENTRYPOINT ["java", "-jar", "app.jar"]
