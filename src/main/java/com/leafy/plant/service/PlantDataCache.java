@@ -72,4 +72,11 @@ public class PlantDataCache {
     public Collection<PlantDataDto> getAllPlants() {
         return plantMap.values();
     }
+
+    public void addPlant(PlantDataDto newPlant) {
+        if (newPlant != null && newPlant.getId() != null) {
+            plantMap.put(newPlant.getId(), newPlant);
+            log.info("[Cache] 새로운 식물 '{}'(ID:{})가 메모리 내 캐시에 추가되었습니다.", newPlant.getKoreanName(), newPlant.getId());
+        }
+    }
 }

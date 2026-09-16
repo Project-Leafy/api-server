@@ -85,7 +85,7 @@ plant:
     base-url: https://plant.id/api/v3 # API 기본 URL은 공통
 kma:
   api:
-    url: http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst # 기상청 API URL
+    url: http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst # 기상청 API URL
 nongsaro: # Nongsaro API 설정 추가
   api:
     base-url: http://api.nongsaro.go.kr/service/garden/gardenList

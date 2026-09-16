@@ -102,7 +102,7 @@ public class NotificationController {
             // 날씨 확인 로직
             boolean isRaining = false;
             if (user.getLatitude() != null && user.getLongitude() != null) {
-                isRaining = weatherService.willItRainToday(user.getLatitude(), user.getLongitude());
+                isRaining = weatherService.isRainingNow(user.getLatitude(), user.getLongitude());
             }
 
             // ✅ 누락되었던 메서드 구현 완료

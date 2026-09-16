@@ -54,4 +54,9 @@ public class Schedule extends BaseTimeEntity {
     public void changeNotificationStatus(String status) {
         this.notificationStatus = status;
     }
+
+    // --- 다음 예정일 변경 메서드 ---
+    public void updateNextDueDate(LocalDate newDate) {
+        this.nextDueDate = newDate;
+    }
 }
