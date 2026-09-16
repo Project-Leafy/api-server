@@ -81,6 +81,7 @@ public class SecurityConfig {
                                 "/h2-console/**", //개발용 메모리
                                 "/actuator/**", // 모니터링 엔드포인트 (내부망 전용 포트로 분리됨)
                                 "/error", // 에러 디스패치. 막아두면 404가 401로 둔갑해 로그가 왜곡된다
+                                "/files/**", // 업로드 이미지 서빙. <img> 태그는 토큰을 싣지 않는다
                                 "http://localhost:8080", //Swagger UI 테스트를 위해 로컬 서버 허용
                                 "/home" // ✨ SuccessHandler가 리다이렉트하는 최종 경로
                                 // [수정됨] /oauth/callback 제거 (더 이상 백엔드가 호출받지 않음)

@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.leafy.diagnosis.dto.PlantIdRequestDto;
 import com.leafy.diagnosis.dto.PlantIdResponseDto;
 import com.leafy.global.exception.EntityNotFoundException;
-import com.leafy.global.storage.S3UploadService;
+import com.leafy.global.storage.FileStorageService;
 import com.leafy.global.type.LightLevel;
 import com.leafy.global.type.WaterFrequency;
 import com.leafy.plant.domain.PlantSpecies;
@@ -23,14 +23,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.reactive.function.client.WebClient;
-import software.amazon.awssdk.core.ResponseInputStream;
-import software.amazon.awssdk.core.sync.RequestBody;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectResponse;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Comparator;
@@ -43,27 +38,21 @@ import java.util.Optional;
 public class PlantIdentificationService {
 
     private final WebClient plantIdWebClient;
-    private final S3UploadService s3UploadService;
+    private final FileStorageService fileStorageService;
     private final PlantSpeciesRepository plantSpeciesRepository;
     private final UserRepository userRepository;
     private final OpenAiService openAiService;
     private final PlantDataCache plantDataCache;
-    private final S3Client s3Client;
     private final ObjectMapper objectMapper;
 
-    @Value("${aws.s3.bucket-name}")
-    private String bucketName;
-    private static final String S3_KEY = "plants/final_plants.json";
 
-
-    public PlantIdentificationService(@Qualifier("plantIdWebClient") WebClient plantIdWebClient, S3UploadService s3UploadService, PlantSpeciesRepository plantSpeciesRepository, UserRepository userRepository, OpenAiService openAiService, PlantDataCache plantDataCache, S3Client s3Client, ObjectMapper objectMapper) {
+    public PlantIdentificationService(@Qualifier("plantIdWebClient") WebClient plantIdWebClient, FileStorageService fileStorageService, PlantSpeciesRepository plantSpeciesRepository, UserRepository userRepository, OpenAiService openAiService, PlantDataCache plantDataCache, ObjectMapper objectMapper) {
         this.plantIdWebClient = plantIdWebClient;
-        this.s3UploadService = s3UploadService;
+        this.fileStorageService = fileStorageService;
         this.plantSpeciesRepository = plantSpeciesRepository;
         this.userRepository = userRepository;
         this.openAiService = openAiService;
         this.plantDataCache = plantDataCache;
-        this.s3Client = s3Client;
         this.objectMapper = objectMapper;
     }
 
@@ -76,7 +65,7 @@ public class PlantIdentificationService {
 
         currentUser.updateLocation(lat, lon);
 
-        String s3ImageUrl = s3UploadService.upload(imageFile, "identification");
+        String s3ImageUrl = fileStorageService.upload(imageFile, "identification");
         log.info("Image uploaded to S3: {}", s3ImageUrl);
 
         String base64Data = Base64.getEncoder().encodeToString(imageFile.getBytes());
@@ -159,24 +148,31 @@ public class PlantIdentificationService {
             PlantDataDto newPlantData = openAiService.getCareInfoForNewPlant(koreanName, scientificName).block();
             if (newPlantData == null) throw new RuntimeException("OpenAI returned no data.");
 
-            // 2. S3에서 기존 JSON 파일 읽기
-            ResponseInputStream<GetObjectResponse> s3Object = s3Client.getObject(GetObjectRequest.builder().bucket(bucketName).key(S3_KEY).build());
-            List<PlantDataDto> allPlants = objectMapper.readValue(s3Object, new TypeReference<>() {});
+            // 2. 저장소에서 기존 JSON 파일 읽기
+            // 저장소에 아직 파일이 없으면 jar에 번들된 기본 데이터로 시작한다.
+            List<PlantDataDto> allPlants;
+            try (InputStream existing = fileStorageService.read(PlantDataCache.PLANT_DATA_KEY)) {
+                InputStream source = (existing != null)
+                        ? existing
+                        : getClass().getResourceAsStream("/data/final_plants.json");
+                if (source == null) {
+                    throw new IllegalStateException("식물 데이터 파일을 찾을 수 없습니다.");
+                }
+                allPlants = objectMapper.readValue(source, new TypeReference<>() {});
+            }
 
             // 3. 새 ID 할당 및 리스트에 추가
             long maxId = allPlants.stream().mapToLong(PlantDataDto::getId).max().orElse(0L);
             newPlantData.setId(maxId + 1);
             allPlants.add(newPlantData);
             
-            log.info("[S3] 신규 식물 '{}'(ID:{}) 추가. 총 {}개의 데이터.", newPlantData.getKoreanName(), newPlantData.getId(), allPlants.size());
+            log.info("[Storage] 신규 식물 '{}'(ID:{}) 추가. 총 {}개의 데이터.", newPlantData.getKoreanName(), newPlantData.getId(), allPlants.size());
 
-            // 4. 수정된 리스트를 S3에 덮어쓰기
+            // 4. 수정된 리스트를 저장소에 덮어쓰기
             String updatedJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(allPlants);
-            s3Client.putObject(
-                PutObjectRequest.builder().bucket(bucketName).key(S3_KEY).contentType("application/json").build(),
-                RequestBody.fromString(updatedJson, StandardCharsets.UTF_8)
-            );
-            log.info("[S3] '{}' 파일 업데이트 완료.", S3_KEY);
+            fileStorageService.write(PlantDataCache.PLANT_DATA_KEY,
+                    updatedJson.getBytes(StandardCharsets.UTF_8));
+            log.info("[Storage] '{}' 파일 업데이트 완료.", PlantDataCache.PLANT_DATA_KEY);
             
             // 5. 현재 실행중인 서버의 캐시 업데이트
             plantDataCache.addPlant(newPlantData);
@@ -185,7 +181,7 @@ public class PlantIdentificationService {
             return saveNewPlantSpecies(newPlantData, suggestion);
 
         } catch (Exception e) {
-            log.error("[신규 식물] OpenAI 또는 S3 처리 중 심각한 오류 발생. 기본 정보로 식물을 생성합니다. 오류: {}", e.getMessage());
+            log.error("[신규 식물] OpenAI 또는 저장소 처리 중 심각한 오류 발생. 기본 정보로 식물을 생성합니다. 오류: {}", e.getMessage());
             // 실패 시, 기본 정보로라도 PlantSpecies를 생성하여 등록 흐름을 유지
             return createDefaultPlantSpecies(suggestion);
         }

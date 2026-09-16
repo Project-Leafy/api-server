@@ -14,7 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
-import com.leafy.global.storage.S3UploadService;
+import com.leafy.global.storage.FileStorageService;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
@@ -32,7 +32,7 @@ public class NongsaroJsonExtractor {
     private final WebClient webClient;
     private final XmlMapper xmlMapper = new XmlMapper();
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final S3UploadService s3UploadService;
+    private final FileStorageService fileStorageService;
 
     @Value("${nongsaro.api-key}")
     private String apiKey;
@@ -293,7 +293,7 @@ public class NongsaroJsonExtractor {
         if (contentType == null) contentType = "image/jpeg";
 
         try (InputStream inputStream = connection.getInputStream()) {
-            return s3UploadService.upload(inputStream, originalFileName, contentLength, contentType, "nongsaro_img");
+            return fileStorageService.upload(inputStream, originalFileName, contentLength, contentType, "nongsaro_img");
         } catch (Exception e) {
             // 👇 에러가 났을 때 구체적인 이유(403, 404 등)를 알기 위해 로그를 강화함
             log.error("❌ 이미지 다운로드 실패 URL: {} / 사유: {}", imageUrl, e.toString());

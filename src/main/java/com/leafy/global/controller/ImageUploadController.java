@@ -1,6 +1,6 @@
 package com.leafy.global.controller; // 패키지 경로는 상황에 맞게 조정
 
-import com.leafy.global.storage.S3UploadService;
+import com.leafy.global.storage.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +18,7 @@ import java.util.Map;
 @CrossOrigin(origins = "*") // 혹시 CORS 에러가 나면 이거 추가!
 public class ImageUploadController {
 
-    private final S3UploadService s3UploadService;
+    private final FileStorageService fileStorageService;
 
     // 성장 일지 등 일반 이미지 업로드용 API
     @PostMapping("/upload")
@@ -27,7 +27,7 @@ public class ImageUploadController {
     ) throws IOException {
 
         // 1. S3에 업로드 (디렉토리명을 "journal"로 설정하여 구분)
-        String s3Url = s3UploadService.upload(file, "journal");
+        String s3Url = fileStorageService.upload(file, "journal");
         log.info("Journal Image uploaded: {}", s3Url);
 
         // 2. URL 반환 (JSON 형식)

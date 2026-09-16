@@ -30,13 +30,6 @@ plant:
   id:
     api-key: ${PLANT_ID_API_KEY}
 
-cloudfront:
-  url: ${CLOUDFRONT_URL}
-
-aws:
-  s3:
-    bucket-name: ${S3_BUCKET_NAME}
-
 # [핵심] 프론트엔드 리다이렉트 주소 설정
 app:
   frontend-url: https://leafy-pr.com/callback.html # 배포 환경 프론트엔드 URL

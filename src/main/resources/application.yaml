@@ -50,12 +50,13 @@ spring:
             user-info-uri: https://kapi.kakao.com/v2/user/me
             user-name-attribute: id
 
-  cloud:
-    aws:
-      region:
-        static: ap-northeast-2
-      stack:
-        auto: false
+# --- 업로드 파일 저장 (S3/CloudFront 대체) ---
+# 컨테이너를 재생성해도 파일이 남으려면 app.upload.dir 에 볼륨을 물려야 한다.
+app:
+  upload:
+    dir: ${UPLOAD_DIR:./uploads}
+    url-path: ${UPLOAD_URL_PATH:/files}
+    public-base-url: ${UPLOAD_PUBLIC_BASE_URL:http://localhost:8080/files}
 
 # 3. 서버 기본 설정
 server:

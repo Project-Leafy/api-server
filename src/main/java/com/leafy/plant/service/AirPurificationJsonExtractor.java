@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
-import com.leafy.global.storage.S3UploadService;
+import com.leafy.global.storage.FileStorageService;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +35,7 @@ public class AirPurificationJsonExtractor {
     private final WebClient webClient;
     private final XmlMapper xmlMapper = new XmlMapper();
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final S3UploadService s3UploadService;
+    private final FileStorageService fileStorageService;
 
     @Value("${purify.api-key}")
     private String apiKey;
@@ -170,7 +170,7 @@ public class AirPurificationJsonExtractor {
 
     private void uploadJsonToS3(File file) {
         try (FileInputStream fis = new FileInputStream(file)) {
-            String s3Url = s3UploadService.upload(
+            String s3Url = fileStorageService.upload(
                     fis,
                     file.getName(),
                     file.length(),

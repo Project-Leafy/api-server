@@ -7,7 +7,7 @@ import com.leafy.diagnosis.dto.DiagnosisResponseDto;
 import com.leafy.diagnosis.dto.PlantIdRequestDto;
 import com.leafy.diagnosis.dto.PlantIdResponseDto;
 import com.leafy.diagnosis.repository.DiagnosisHistoryRepository;
-import com.leafy.global.storage.S3UploadService;
+import com.leafy.global.storage.FileStorageService;
 import com.leafy.global.type.DiagnosisFeedbackStep;
 import com.leafy.plant.domain.MyPlant;
 import com.leafy.global.type.PlantStatus;
@@ -38,20 +38,20 @@ import java.util.stream.Collectors;
 public class DiagnosisService {
 
     private final WebClient plantIdWebClient;
-    private final S3UploadService s3UploadService;
+    private final FileStorageService fileStorageService;
     private final DiagnosisHistoryRepository diagnosisHistoryRepository;
     private final MyPlantRepository myPlantRepository;
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
 
     public DiagnosisService(@Qualifier("plantIdWebClient") WebClient plantIdWebClient,
-                            S3UploadService s3UploadService,
+                            FileStorageService fileStorageService,
                             DiagnosisHistoryRepository diagnosisHistoryRepository,
                             MyPlantRepository myPlantRepository,
                             UserRepository userRepository,
                             ObjectMapper objectMapper) {
         this.plantIdWebClient = plantIdWebClient;
-        this.s3UploadService = s3UploadService;
+        this.fileStorageService = fileStorageService;
         this.diagnosisHistoryRepository = diagnosisHistoryRepository;
         this.myPlantRepository = myPlantRepository;
         this.userRepository = userRepository;
@@ -76,7 +76,7 @@ public class DiagnosisService {
         }
 
         // 2. S3 업로드
-        String s3ImageUrl = s3UploadService.upload(imageFile, "diagnosis");
+        String s3ImageUrl = fileStorageService.upload(imageFile, "diagnosis");
         log.info("Diagnosis Image Uploaded: {}", s3ImageUrl);
 
         // 3. Base64 변환
