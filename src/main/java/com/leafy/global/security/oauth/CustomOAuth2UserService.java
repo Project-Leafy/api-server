@@ -1,4 +1,5 @@
 package com.leafy.global.security.oauth;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import com.leafy.user.domain.Role;
 import com.leafy.user.domain.User;
 import com.leafy.user.repository.UserRepository;
@@ -12,6 +13,7 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "app.kakao.enabled", havingValue = "true")
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private final UserRepository userRepository;

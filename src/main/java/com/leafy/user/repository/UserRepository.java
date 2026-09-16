@@ -11,4 +11,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     // 2. 닉네임 중복 확인 시 사용
     boolean existsByNickname(String nickname);
+
+    // --- 로컬 로그인 ---
+    Optional<User> findByLoginId(String loginId);
+
+    boolean existsByLoginId(String loginId);
+
+    boolean existsByEmail(String email);
+
+    // 아이디 찾기: 가입 시 등록한 이메일과 닉네임이 모두 일치해야 한다.
+    Optional<User> findByEmailAndNickname(String email, String nickname);
 }

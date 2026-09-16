@@ -1,6 +1,7 @@
 
 package com.leafy.global.security.oauth;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import com.leafy.global.security.jwt.JwtTokenProvider;
 import com.leafy.global.security.jwt.TokenInfo;
 import com.leafy.user.domain.User;
@@ -25,6 +26,7 @@ import java.io.IOException;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "app.kakao.enabled", havingValue = "true")
 public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
     private final JwtTokenProvider jwtTokenProvider;

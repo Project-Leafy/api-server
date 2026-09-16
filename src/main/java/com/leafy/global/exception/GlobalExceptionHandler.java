@@ -3,7 +3,9 @@ package com.leafy.global.exception;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import com.leafy.auth.exception.AuthException;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -69,6 +71,20 @@ public class GlobalExceptionHandler {
             RuntimeException e, HttpServletRequest request) {
 
         return blocked(request, HttpStatus.NOT_FOUND, "not_found", e.getMessage());
+    }
+
+    /** 인증 기능의 거부 (중복 가입, 로그인 실패, 계정 불일치 등) */
+    @ExceptionHandler(AuthException.class)
+    public ResponseEntity<Map<String, Object>> handleAuth(AuthException e, HttpServletRequest request) {
+        return blocked(request, e.getStatus(), e.getReason(), e.getClientMessage());
+    }
+
+    /** 요청 본문이 JSON 으로 읽히지 않는 경우. 처리하지 않으면 500 으로 둔갑한다. */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, Object>> handleUnreadableBody(
+            HttpMessageNotReadableException e, HttpServletRequest request) {
+
+        return blocked(request, HttpStatus.BAD_REQUEST, "malformed_body", "요청 본문 형식이 올바르지 않습니다.");
     }
 
     /** 존재하지 않는 경로 — 스캐너가 경로를 훑을 때 대량으로 발생한다. */

@@ -2,7 +2,7 @@ package com.leafy.notification.scheduler;
 
 import com.leafy.notification.domain.Notification;
 import com.leafy.notification.repository.NotificationRepository;
-import com.leafy.notification.service.KakaoMessageService;
+import com.leafy.notification.service.MessageSender;
 import com.leafy.plant.domain.MyPlant;
 import com.leafy.schedule.domain.Schedule;
 import com.leafy.schedule.repository.ScheduleRepository;
@@ -29,7 +29,7 @@ import java.util.*;
 public class NotificationScheduler {
 
     private final ScheduleRepository scheduleRepository;
-    private final KakaoMessageService kakaoMessageService;
+    private final MessageSender messageSender;
     private final NotificationRepository notificationRepository;
     private final DiagnosisHistoryRepository diagnosisHistoryRepository;
     private final MyPlantRepository myPlantRepository;
@@ -73,7 +73,7 @@ public class NotificationScheduler {
             // 3. (비가 오지 않거나, 물주기가 아닌 경우) 스마트 메시지 생성 및 발송
             String message = createSmartMessage(type, plantNickname, isRaining);
 
-            if (kakaoMessageService.sendSelfMessage(user, message)) {
+            if (messageSender.sendSelfMessage(user, message)) {
                 schedule.changeNotificationStatus("SENT");
                 saveNotificationHistory(user, schedule, message, type);
                 successCount++;
@@ -198,7 +198,7 @@ public class NotificationScheduler {
         String messageBody = getRandomTipTemplate(plantName, diseaseName);
         String fullMessage = String.format("💊 [Leafy 닥터] 관리 팁 도착!\n\n%s", messageBody);
 
-        if (kakaoMessageService.sendSelfMessage(user, fullMessage)) {
+        if (messageSender.sendSelfMessage(user, fullMessage)) {
             history.updateStep(DiagnosisFeedbackStep.TIP_SENT); // 상태 변경
             saveNotificationHistory(user, history.getMyPlant(), fullMessage, "DIAGNOSIS_TIP");
         }
@@ -214,7 +214,7 @@ public class NotificationScheduler {
         String messageBody = getRandomCheckTemplate(plantName, diseaseName);
         String fullMessage = String.format("🔍 [Leafy 닥터] 상태 확인\n\n%s\n\n👇 아래 버튼을 눌러 상태를 기록해주세요!", messageBody);
 
-        if (kakaoMessageService.sendSelfMessage(user, fullMessage)) {
+        if (messageSender.sendSelfMessage(user, fullMessage)) {
             history.updateStep(DiagnosisFeedbackStep.CHECK_REQUESTED); // 상태 변경
             saveNotificationHistory(user, history.getMyPlant(), fullMessage, "DIAGNOSIS_CHECK");
         }
@@ -307,7 +307,7 @@ public class NotificationScheduler {
         String fullMessage = String.format("🎉 [Leafy 베프 알림]\n\n%s", messageBody);
 
         // 카톡 발송 및 저장
-        if (kakaoMessageService.sendSelfMessage(user, fullMessage)) {
+        if (messageSender.sendSelfMessage(user, fullMessage)) {
             // 알림 내역 저장 (Notification Type: LIFECYCLE_CARE)
             saveNotificationHistory(user, plant, fullMessage, "LIFECYCLE_CARE");
         }

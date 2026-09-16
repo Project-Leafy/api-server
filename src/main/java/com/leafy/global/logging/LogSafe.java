@@ -15,7 +15,7 @@ import java.util.regex.Pattern;
  *       로그는 수집되어 외부(Loki)에 장기 보관되므로 값을 가린다.</li>
  * </ol>
  */
-final class LogSafe {
+public final class LogSafe {
 
     /** 값을 가려야 하는 파라미터 이름. 대소문자를 구분하지 않는다. */
     private static final Pattern SECRET_PARAM = Pattern.compile(
@@ -31,7 +31,7 @@ final class LogSafe {
     /**
      * 제어문자를 이스케이프해 한 줄을 보장한다. null 은 "-" 로 남긴다.
      */
-    static String sanitize(String value) {
+    public static String sanitize(String value) {
         if (value == null) {
             return "-";
         }

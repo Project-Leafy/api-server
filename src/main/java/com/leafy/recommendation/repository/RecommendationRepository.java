@@ -12,4 +12,7 @@ public interface RecommendationRepository extends JpaRepository<Recommendation, 
 
     // 2. (대안) 사용자 ID 기준 조회 (User 엔티티의 userId 필드를 기준으로 조회)
     Optional<Recommendation> findByUserUserId(Long userId);
+
+    // 3. 회원 탈퇴 시 사용자의 추천 프로필 삭제
+    void deleteAllByUser(User user);
 }

@@ -60,4 +60,9 @@ public class Notification extends BaseTimeEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "related_diagnosis_id")
     private DiagnosisHistory relatedDiagnosis;
+
+    /** 알림함에서 읽음 처리 */
+    public void markAsRead() {
+        this.isRead = true;
+    }
 }

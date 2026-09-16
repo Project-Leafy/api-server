@@ -23,7 +23,15 @@ public class User extends BaseTimeEntity {
     private Long userId;
 
     @Column(unique = true, nullable = false, length = 255)
-    private String email; // 사용자의 이메일 주소이며, 로그인 시 사용됩니다.
+    private String email; // 사용자의 이메일 주소. 아이디·비밀번호 찾기의 본인 확인에 사용됩니다.
+
+    // --- 로컬 로그인 계정 ---
+    // 카카오로 가입한 기존 사용자는 두 값이 비어 있으므로 nullable 로 둔다.
+    @Column(name = "login_id", unique = true, length = 50)
+    private String loginId;
+
+    @Column(name = "password_hash", length = 100)
+    private String passwordHash; // BCrypt 해시. 평문은 저장하지 않는다.
 
     @Column(nullable = false, length = 100)
     private String nickname;
@@ -75,6 +83,27 @@ public class User extends BaseTimeEntity {
         this.oauthProviderId = oauthProviderId;
         this.profilePhotoUrl = profilePhotoUrl;
         this.role = role; // ✨ Role 추가
+    }
+
+    /** 아이디·비밀번호로 가입하는 로컬 사용자를 만든다. 가입 직후는 온보딩 전이므로 GUEST 다. */
+    public static User createLocal(String loginId, String passwordHash, String email, String nickname) {
+        User user = User.builder()
+                .email(email)
+                .nickname(nickname)
+                .oauthProvider("local")
+                .role(Role.GUEST)
+                .build();
+        user.loginId = loginId;
+        user.passwordHash = passwordHash;
+        return user;
+    }
+
+    public void changePassword(String newPasswordHash) {
+        this.passwordHash = newPasswordHash;
+    }
+
+    public void recordLogin() {
+        this.lastLoginAt = LocalDateTime.now();
     }
 
     // 카카오 토큰 저장/갱신 메서드 ---
