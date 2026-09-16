@@ -62,7 +62,6 @@ public class AccessLogFilter extends OncePerRequestFilter {
             MDC.put("query_decoded", LogSafe.sanitizeQuery(QueryDecoder.decode(rawQuery)));
             MDC.put("user_agent", LogSafe.sanitize(request.getHeader("User-Agent")));
             MDC.put("principal", resolvePrincipal(request));
-            MDC.put("outcome", outcomeOf(status));
 
             try {
                 // 텍스트 포맷일 때도 필드를 읽을 수 있도록 key=value 로 남긴다.
@@ -70,14 +69,13 @@ public class AccessLogFilter extends OncePerRequestFilter {
                 // JSON 전환 전에도 수집 계층이 값을 파싱할 수 있다.
                 ACCESS_LOG.info(
                         "method={} uri={} status={} duration_ms={} source_ip={} principal={} "
-                                + "outcome={} user_agent=\"{}\" query=\"{}\" query_decoded=\"{}\"",
+                                + "user_agent=\"{}\" query=\"{}\" query_decoded=\"{}\"",
                         request.getMethod(),
                         MDC.get("uri"),
                         status,
                         durationMs,
                         MDC.get("source_ip"),
                         MDC.get("principal"),
-                        MDC.get("outcome"),
                         MDC.get("user_agent"),
                         MDC.get("query"),
                         MDC.get("query_decoded"));
@@ -85,19 +83,6 @@ public class AccessLogFilter extends OncePerRequestFilter {
                 MDC.clear();
             }
         }
-    }
-
-    /**
-     * 상태코드를 사람이 읽을 수 있는 결과값으로 환산한다.
-     *
-     * <p>4xx를 blocked 로 표시하는 것이 핵심이다. 스캔이 들어왔지만 전부 막힌 상황과
-     * 실제로 뚫린 상황을 LLM이 구분하려면 "차단됨"이라는 근거가 로그에 명시돼야 한다.
-     */
-    private String outcomeOf(int status) {
-        if (status >= 500) return "server_error";
-        if (status == 401 || status == 403) return "blocked_auth";
-        if (status >= 400) return "blocked_request";
-        return "success";
     }
 
     /**
