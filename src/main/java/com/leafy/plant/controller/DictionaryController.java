@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class DictionaryController {
 
     // S3/CloudFront 를 걷어내고 앱이 직접 서빙하므로, 업로드 저장소의 공개 URL을 쓴다.
-    @Value("${app.upload.public-base-url}")
+    @Value("${app.storage.public-base-url}")
     private String publicBaseUrl;
 
     // 프론트엔드가 호출할 API

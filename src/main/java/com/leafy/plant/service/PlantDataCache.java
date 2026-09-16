@@ -50,10 +50,23 @@ public class PlantDataCache {
             if (inputStream == null) {
                 throw new IllegalStateException("번들된 데이터 파일을 찾을 수 없습니다: /data/final_plants.json");
             }
-            cacheFrom(inputStream);
+            byte[] bundled = inputStream.readAllBytes();
+            cacheFrom(new java.io.ByteArrayInputStream(bundled));
             log.info("[Cache] 번들 데이터로부터 {}개의 식물 데이터를 캐싱했습니다.", plantMap.size());
+
+            // 도감 화면은 저장소의 JSON 파일을 직접 받아가므로, 저장소에도 올려둔다.
+            publishToStorage(bundled);
         } catch (Exception e) {
             log.error("[Cache-FATAL] 식물 데이터 캐싱에 모두 실패했습니다. 추천 시스템을 사용할 수 없습니다.", e);
+        }
+    }
+
+    private void publishToStorage(byte[] content) {
+        try {
+            fileStorageService.write(PLANT_DATA_KEY, content, "application/json");
+            log.info("[Cache] 도감 데이터를 저장소에 올렸습니다. key={}", PLANT_DATA_KEY);
+        } catch (Exception e) {
+            log.warn("[Cache-WARN] 도감 데이터를 저장소에 올리지 못했습니다. 도감 화면이 비어 보일 수 있습니다. ({})", e.getMessage());
         }
     }
 

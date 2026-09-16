@@ -22,11 +22,6 @@ WORKDIR /app
 RUN apk add --no-cache tzdata
 ENV TZ=Asia/Seoul
 
-# 업로드 파일 저장 경로. 컨테이너를 재생성해도 남으려면 볼륨을 물려야 한다.
-ENV UPLOAD_DIR=/app/uploads
-RUN mkdir -p /app/uploads
-VOLUME ["/app/uploads"]
-
 # 빌드 단계에서 생성된 jar 파일만 가져옴
 COPY --from=builder /app/build/libs/*.jar app.jar
 
