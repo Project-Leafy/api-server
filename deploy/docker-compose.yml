@@ -1,0 +1,83 @@
+# Leafy 배포용 compose (Windows 데스크톱 + Tailscale)
+#
+# 도커허브에 올린 이미지를 받아 실행한다. 소스 빌드는 하지 않는다.
+# PostgreSQL 은 Windows 에 직접 설치한 것을 쓴다(host.docker.internal).
+# 처음 띄우는 순서는 같은 폴더의 README.md 를 따른다.
+#
+# 밖으로 여는 포트는 프론트(80) 하나이고, Tailscale IP 에만 연결한다.
+# 백엔드(8080)·모니터링(9090)·MinIO(9000/9001)는 도커 내부망에서만 닿는다.
+
+services:
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+    container_name: leafy-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${STORAGE_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${STORAGE_SECRET_KEY}
+    volumes:
+      # 업로드 사진과 도감 이미지가 여기에 남는다. 이 볼륨을 지우면 사진이 사라진다.
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    # MinIO 관리 화면이 필요할 때만 주석을 풀어 이 PC 에서만 접속한다.
+    # ports:
+    #   - "127.0.0.1:9001:9001"
+
+  backend:
+    image: gicks/ai-ops-leafy-backend:${BACKEND_TAG:-latest}
+    container_name: leafy-backend
+    restart: unless-stopped
+    depends_on:
+      minio:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      TZ: Asia/Seoul
+
+      # --- DB (Windows 에 설치한 PostgreSQL) ---
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://host.docker.internal:5432/leafy_dev"
+      DB_USERNAME_DEV: ${DB_USERNAME}
+      DB_PASSWORD_DEV: ${DB_PASSWORD}
+      # dev 프로필 기본값(create-drop)은 종료할 때 테이블을 지운다. 배포에서는 유지한다.
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+
+      # --- 인증 ---
+      JWT_SECRET_KEY_DEV: ${JWT_SECRET_KEY}
+
+      # --- 저장소 (MinIO) ---
+      STORAGE_ENDPOINT: http://minio:9000
+      STORAGE_BUCKET: leafy
+      STORAGE_ACCESS_KEY: ${STORAGE_ACCESS_KEY}
+      STORAGE_SECRET_KEY: ${STORAGE_SECRET_KEY}
+      STORAGE_PUBLIC_BASE_URL: /files
+
+      # --- 접속 주소 ---
+      CORS_ALLOWED_ORIGINS: http://${TAILSCALE_IP}
+
+      # --- 외부 API (없으면 해당 기능만 동작하지 않는다) ---
+      PLANT_ID_API_KEY: ${PLANT_ID_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      NONGSARO_API_KEY: ${NONGSARO_API_KEY:-}
+      AIR_PURIFIY_KEY: ${AIR_PURIFIY_KEY:-}
+      OPEN_WEATHER_API_KEY: ${OPEN_WEATHER_API_KEY:-}
+
+  frontend:
+    image: gicks/ai-ops-leafy-frontend:${FRONTEND_TAG:-latest}
+    container_name: leafy-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - minio
+    ports:
+      # Tailscale IP 에만 연결해 같은 tailnet 의 팀원만 접속하게 한다.
+      - "${TAILSCALE_IP}:80:80"
+
+volumes:
+  minio_data:
