@@ -16,6 +16,9 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends GenericFilterBean {
 
+    /** 액세스 로그가 읽어가는 인증 주체 요청 속성 키. */
+    public static final String PRINCIPAL_ATTRIBUTE = "leafy.principal";
+
     private final JwtTokenProvider jwtTokenProvider;
 
     @Override
@@ -28,6 +31,11 @@ public class JwtAuthenticationFilter extends GenericFilterBean {
             // 토큰이 유효할 경우 토큰에서 Authentication 객체를 가지고 와서 SecurityContext 에 저장
             Authentication authentication = jwtTokenProvider.getAuthentication(token);
             SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            // 액세스 로그가 인증 주체를 남길 수 있도록 요청 속성에 보관한다.
+            // 로그는 필터 체인 가장 바깥에서 찍히는데, 그 시점엔 Security가 이미
+            // SecurityContextHolder 를 비운 뒤라 여기서 넘겨줘야 한다.
+            request.setAttribute(PRINCIPAL_ATTRIBUTE, authentication.getName());
         }
         chain.doFilter(request, response);
     }

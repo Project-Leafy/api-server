@@ -10,7 +10,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 // CORS 설정을 위한 import 추가
@@ -29,6 +31,10 @@ public class SecurityConfig {
     private final JwtTokenProvider jwtTokenProvider;
     private final CustomOAuth2UserService customOAuth2UserService; // Role을 부여하는 서비스
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler; // JWT 토큰 발행 핸들러
+
+    // 401/403 거부를 로그로 남기기 위한 핸들러 (SecurityLogHandlers)
+    private final AuthenticationEntryPoint loggingAuthenticationEntryPoint;
+    private final AccessDeniedHandler loggingAccessDeniedHandler;
 
     @Value("${app.cors-allowed-origins}")
     private List<String> corsAllowedOrigins;
@@ -73,6 +79,8 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/api-docs/**",
                                 "/h2-console/**", //개발용 메모리
+                                "/actuator/**", // 모니터링 엔드포인트 (내부망 전용 포트로 분리됨)
+                                "/error", // 에러 디스패치. 막아두면 404가 401로 둔갑해 로그가 왜곡된다
                                 "http://localhost:8080", //Swagger UI 테스트를 위해 로컬 서버 허용
                                 "/home" // ✨ SuccessHandler가 리다이렉트하는 최종 경로
                                 // [수정됨] /oauth/callback 제거 (더 이상 백엔드가 호출받지 않음)
@@ -80,6 +88,13 @@ public class SecurityConfig {
                         // 그 외의 모든 요청은 인증이 필요합니다.
                         .anyRequest().authenticated()
                 )
+                // 거부(401/403) 시 로그를 남기는 핸들러를 연결합니다.
+                // 기본 동작은 로그 없이 상태코드만 반환하여, 차단 사실이 로그에 남지 않습니다.
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(loggingAuthenticationEntryPoint)
+                        .accessDeniedHandler(loggingAccessDeniedHandler)
+                )
+
                 // OAuth2 로그인을 설정합니다.
                 .oauth2Login(oauth2 -> oauth2
                         // 사용자 정보 엔드포인트를 설정합니다.

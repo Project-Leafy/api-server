@@ -34,6 +34,13 @@ dependencies {
     // 입력값 검증 (@NotNull, @Email 등 사용) - 이상한 데이터 방어
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 
+    // 앱 상태/메트릭 노출 (health, metrics) - 모니터링 수집용
+    // 공개 포트(8080)가 아닌 별도 관리 포트로 분리해 내부망에만 노출한다.
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    // Prometheus 스크레이프용 메트릭 포맷 (/actuator/prometheus)
+    runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
+
 
     // =================================================================
     // 2. 데이터베이스 & JPA (Persistence Layer)
@@ -88,7 +95,7 @@ dependencies {
     // 5. 문서화 & 코드 유틸리티 (Docs & Utils)
     // =================================================================
     // Swagger UI (API 명세서 자동 생성) - 최신 스프링 부트 3.x 호환 버전
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6'
 
     // Lombok (반복 코드 제거) - 컴파일 시에만 관여하고 빠짐
     compileOnly 'org.projectlombok:lombok'
