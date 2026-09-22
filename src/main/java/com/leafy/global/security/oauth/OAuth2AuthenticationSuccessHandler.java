@@ -89,12 +89,6 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         // 2. JWT 토큰 생성 및 리다이렉트 (기존 로직 유지)
         TokenInfo tokenInfo = jwtTokenProvider.generateToken(authentication);
 
-        // 디버깅용 로그
-        System.out.println("=========================================================");
-        System.out.println("Access Token: " + tokenInfo.getAccessToken());
-        System.out.println("Refresh Token: " + tokenInfo.getRefreshToken());
-        System.out.println("=========================================================");
-
         // 프론트엔드 URL로 리다이렉트 (포트 번호 확인: 5500)
         // ❌ 변경 전 (로컬 테스트용)
         //String redirectUrl = "http://localhost:5500/callback.html#accessToken=" + tokenInfo.getAccessToken();

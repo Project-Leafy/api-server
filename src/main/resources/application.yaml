@@ -31,10 +31,12 @@ spring:
   datasource:
     driver-class-name: org.postgresql.Driver # 드라이버 클래스 이름은 공통
   jpa:
-    show-sql: true
+    # SQL 을 stdout 에 직접 찍지 않는다. show-sql 은 로거를 거치지 않아
+    # JSON 로그 모드에서도 JSON 이 아닌 줄이 섞인다.
+    # SQL 이 필요하면 logging.level.org.hibernate.SQL 을 DEBUG 로 켠다(로거 경유).
+    show-sql: false
     properties:
       hibernate:
-        format-sql: true
         default-batch-fetch-size: 100
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     open-in-view: false
@@ -54,6 +56,10 @@ spring:
 # 브라우저는 파일을 nginx 의 /files/ 경로로 받고, nginx 가 MinIO 로 넘긴다.
 # 그래서 public-base-url 은 접속 주소와 무관한 상대 경로(/files)다.
 app:
+  logging:
+    # 백엔드 바로 앞 신뢰 프록시(CIDR, 쉼표 구분). 비우면 기존 동작(전달 헤더를 무조건 믿음).
+    # 도커 게이트웨이(.1)는 넣지 말 것. Docker Desktop 에서는 모든 외부 요청이 게이트웨이에서 온다.
+    trusted-proxies: ${TRUSTED_PROXIES:}
   storage:
     endpoint: ${STORAGE_ENDPOINT:http://localhost:9000}
     region: ${STORAGE_REGION:us-east-1}
@@ -108,6 +114,8 @@ logging:
   level:
     com.leafy: DEBUG
     ACCESS: INFO
+    # SQL 로그. 기본은 꺼 둔다. 볼 때만 DEBUG 로 (환경변수 LOGGING_LEVEL_ORG_HIBERNATE_SQL=DEBUG)
+    org.hibernate.SQL: WARN
 
   # --- 로그 포맷 ---
   # 비워두면 기존 텍스트 포맷, json 으로 바꾸면 한 줄 JSON으로 출력된다.
