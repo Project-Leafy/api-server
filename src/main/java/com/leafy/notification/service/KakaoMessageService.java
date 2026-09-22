@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value; // @Value import 추가
 import org.springframework.http.MediaType;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.LinkedMultiValueMap;
@@ -21,8 +22,9 @@ import java.util.Map;
 
 @Slf4j
 @Service
+@ConditionalOnProperty(name = "app.kakao.enabled", havingValue = "true")
 @RequiredArgsConstructor
-public class KakaoMessageService {
+public class KakaoMessageService implements MessageSender {
 
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper; // JSON 변환용
@@ -48,6 +50,7 @@ public class KakaoMessageService {
      * @return 성공 여부
      */
     @Transactional
+    @Override
     public boolean sendSelfMessage(User user, String messageContent) {
         if (user.getKakaoAccessToken() == null) {
             log.warn("사용자의 카카오 토큰이 없습니다. UserID: {}", user.getUserId());

@@ -17,4 +17,12 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 
     // 3. 특정 사용자의 읽지 않은(isRead = false) 알림 개수 조회
     long countByUserAndIsReadFalse(User user);
+
+    // 4. 알림 읽음 처리 시 본인 알림인지 함께 확인
+    java.util.Optional<Notification> findByNotificationIdAndUser(Long notificationId, User user);
+
+    List<Notification> findAllByUserAndIsReadFalse(User user);
+
+    // 5. 회원 탈퇴 시 사용자의 알림 전체 삭제
+    void deleteAllByUser(User user);
 }

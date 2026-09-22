@@ -5,6 +5,7 @@ import com.leafy.global.security.jwt.JwtTokenProvider;
 import com.leafy.global.security.oauth.CustomOAuth2UserService;
 import com.leafy.global.security.oauth.OAuth2AuthenticationSuccessHandler;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -29,12 +30,14 @@ import org.springframework.beans.factory.annotation.Value; // @Value import 추�
 public class SecurityConfig {
 
     private final JwtTokenProvider jwtTokenProvider;
-    private final CustomOAuth2UserService customOAuth2UserService; // Role을 부여하는 서비스
-    private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler; // JWT 토큰 발행 핸들러
+    // 카카오 로그인용 빈. kakao 프로필(app.kakao.enabled=true)에서만 만들어진다.
+    private final ObjectProvider<CustomOAuth2UserService> customOAuth2UserService; // Role을 부여하는 서비스
+    private final ObjectProvider<OAuth2AuthenticationSuccessHandler> oAuth2AuthenticationSuccessHandler; // JWT 토큰 발행 핸들러
 
     // 401/403 거부를 로그로 남기기 위한 핸들러 (SecurityLogHandlers)
     private final AuthenticationEntryPoint loggingAuthenticationEntryPoint;
     private final AccessDeniedHandler loggingAccessDeniedHandler;
+
 
     @Value("${app.cors-allowed-origins}")
     private List<String> corsAllowedOrigins;
@@ -71,7 +74,13 @@ public class SecurityConfig {
 
                         // 다음 경로들은 인증 없이 허용합니다.
                         .requestMatchers(
-                                "/login/kakao", // 카카오 로그인 시작 경로
+                                // 로컬 인증 (로그인 전에 호출되는 API)
+                                "/api/v1/auth/signup",
+                                "/api/v1/auth/login",
+                                "/api/v1/auth/find-id",
+                                "/api/v1/auth/reset-password",
+                                "/api/v1/auth/check-login-id",
+                                "/login/kakao", // 카카오 로그인 시작 경로 (kakao 프로필에서만 동작)
                                 //"/login/oauth2/code/kakao/callback",  // 사용하지 않음 (주석 처리)
                                 "/token/**", // 토큰 관련 경로 (예: 리프레시)
                                 "/swagger-ui.html", // Swagger UI
@@ -81,7 +90,6 @@ public class SecurityConfig {
                                 "/h2-console/**", //개발용 메모리
                                 "/actuator/**", // 모니터링 엔드포인트 (내부망 전용 포트로 분리됨)
                                 "/error", // 에러 디스패치. 막아두면 404가 401로 둔갑해 로그가 왜곡된다
-                                "/files/**", // 업로드 이미지 서빙. <img> 태그는 토큰을 싣지 않는다
                                 "http://localhost:8080", //Swagger UI 테스트를 위해 로컬 서버 허용
                                 "/home" // ✨ SuccessHandler가 리다이렉트하는 최종 경로
                                 // [수정됨] /oauth/callback 제거 (더 이상 백엔드가 호출받지 않음)
@@ -96,18 +104,20 @@ public class SecurityConfig {
                         .accessDeniedHandler(loggingAccessDeniedHandler)
                 )
 
-                // OAuth2 로그인을 설정합니다.
-                .oauth2Login(oauth2 -> oauth2
-                        // 사용자 정보 엔드포인트를 설정합니다.
-                        .userInfoEndpoint(userInfo -> userInfo
-                                // 커스텀 OAuth2 사용자 서비스를 사용합니다. (Role 부여)
-                                .userService(customOAuth2UserService)
-                        )
-                        // 인증 성공 핸들러를 설정합니다. (JWT 발행 및 리다이렉트)
-                        .successHandler(oAuth2AuthenticationSuccessHandler)
-                )
                 // JWT 인증 필터를 UsernamePasswordAuthenticationFilter 앞에 추가합니다.
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
+
+        // 카카오 로그인은 비활성화 상태로 남겨둔다. kakao 프로필을 켰을 때만 구성한다.
+        CustomOAuth2UserService oauthUserService = customOAuth2UserService.getIfAvailable();
+        OAuth2AuthenticationSuccessHandler oauthSuccessHandler = oAuth2AuthenticationSuccessHandler.getIfAvailable();
+        if (oauthUserService != null && oauthSuccessHandler != null) {
+            http.oauth2Login(oauth2 -> oauth2
+                    // 커스텀 OAuth2 사용자 서비스를 사용합니다. (Role 부여)
+                    .userInfoEndpoint(userInfo -> userInfo.userService(oauthUserService))
+                    // 인증 성공 핸들러를 설정합니다. (JWT 발행 및 리다이렉트)
+                    .successHandler(oauthSuccessHandler)
+            );
+        }
 
         return http.build();
     }

@@ -171,7 +171,7 @@ public class PlantIdentificationService {
             // 4. 수정된 리스트를 저장소에 덮어쓰기
             String updatedJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(allPlants);
             fileStorageService.write(PlantDataCache.PLANT_DATA_KEY,
-                    updatedJson.getBytes(StandardCharsets.UTF_8));
+                    updatedJson.getBytes(StandardCharsets.UTF_8), "application/json");
             log.info("[Storage] '{}' 파일 업데이트 완료.", PlantDataCache.PLANT_DATA_KEY);
             
             // 5. 현재 실행중인 서버의 캐시 업데이트

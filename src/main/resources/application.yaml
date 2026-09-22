@@ -50,13 +50,19 @@ spring:
             user-info-uri: https://kapi.kakao.com/v2/user/me
             user-name-attribute: id
 
-# --- 업로드 파일 저장 (S3/CloudFront 대체) ---
-# 컨테이너를 재생성해도 파일이 남으려면 app.upload.dir 에 볼륨을 물려야 한다.
+# --- 업로드 파일 저장소 (MinIO, S3 호환) ---
+# 브라우저는 파일을 nginx 의 /files/ 경로로 받고, nginx 가 MinIO 로 넘긴다.
+# 그래서 public-base-url 은 접속 주소와 무관한 상대 경로(/files)다.
 app:
-  upload:
-    dir: ${UPLOAD_DIR:./uploads}
-    url-path: ${UPLOAD_URL_PATH:/files}
-    public-base-url: ${UPLOAD_PUBLIC_BASE_URL:http://localhost:8080/files}
+  storage:
+    endpoint: ${STORAGE_ENDPOINT:http://localhost:9000}
+    region: ${STORAGE_REGION:us-east-1}
+    bucket: ${STORAGE_BUCKET:leafy}
+    access-key: ${STORAGE_ACCESS_KEY:minioadmin}
+    secret-key: ${STORAGE_SECRET_KEY:minioadmin}
+    public-base-url: ${STORAGE_PUBLIC_BASE_URL:/files}
+    # 기동 시 저장소에 없는 도감 이미지를 농사로 원본에서 복구한다.
+    restore-plant-images: ${RESTORE_PLANT_IMAGES:true}
 
 # 3. 서버 기본 설정
 server:

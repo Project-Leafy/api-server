@@ -6,7 +6,7 @@ import com.leafy.global.exception.EntityNotFoundException;
 import com.leafy.notification.domain.Notification;
 import com.leafy.notification.repository.NotificationRepository;
 import com.leafy.notification.scheduler.NotificationScheduler;
-import com.leafy.notification.service.KakaoMessageService;
+import com.leafy.notification.service.MessageSender;
 import com.leafy.notification.service.WeatherService;
 import com.leafy.schedule.domain.Schedule;
 import com.leafy.schedule.repository.ScheduleRepository;
@@ -33,7 +33,7 @@ public class NotificationController {
 
     private final NotificationScheduler notificationScheduler;
     private final DiagnosisHistoryRepository diagnosisHistoryRepository;
-    private final KakaoMessageService kakaoMessageService;
+    private final MessageSender messageSender;
     private final NotificationRepository notificationRepository;
     private final MyPlantRepository myPlantRepository;
 
@@ -60,13 +60,19 @@ public class NotificationController {
         String message = String.format("🌱 [Leafy 일정 등록]\n\n'%s'의 '%s' 일정이 등록되었습니다!\n\n📅 날짜: %s\n\n잊지 않도록 당일에 다시 알려드릴게요! 😉",
                 nickname, typeKorean, date);
 
-        // 3. 카카오톡 전송
-        boolean isSent = kakaoMessageService.sendSelfMessage(user, message);
+        // 3. 알림 전송 (기본: 앱 안 알림함 / kakao 프로필: 카카오톡)
+        boolean isSent = messageSender.sendSelfMessage(user, message);
 
         if (isSent) {
+            notificationRepository.save(Notification.builder()
+                    .user(user)
+                    .myPlant(myPlant)
+                    .notificationType("SCHEDULE_CREATED")
+                    .message(message)
+                    .build());
             return ResponseEntity.ok("일정 등록 알림 발송 성공!\n내용:\n" + message);
         } else {
-            return ResponseEntity.status(500).body("카카오 메시지 발송 실패");
+            return ResponseEntity.status(500).body("알림 발송 실패");
         }
     }
 
@@ -108,7 +114,7 @@ public class NotificationController {
             // ✅ 누락되었던 메서드 구현 완료
             String message = createSmartMessage(type, plantNickname, isRaining);
 
-            if (kakaoMessageService.sendSelfMessage(user, message)) {
+            if (messageSender.sendSelfMessage(user, message)) {
                 schedule.changeNotificationStatus("SENT");
                 // ✅ 누락되었던 메서드 구현 완료
                 saveNotificationHistory(user, schedule, message, "SCHEDULE_TEST");
@@ -162,7 +168,7 @@ public class NotificationController {
         }
 
         // 3. 카카오톡 전송
-        boolean isSent = kakaoMessageService.sendSelfMessage(user, message);
+        boolean isSent = messageSender.sendSelfMessage(user, message);
 
         // 4. 알림 내역 저장
         if (isSent) {
@@ -176,7 +182,7 @@ public class NotificationController {
                     .build());
             return ResponseEntity.ok("테스트 알림 발송 성공! (" + type + ")\n내용: " + message);
         } else {
-            return ResponseEntity.status(500).body("카카오 메시지 발송 실패");
+            return ResponseEntity.status(500).body("알림 발송 실패");
         }
     }
 
@@ -251,7 +257,7 @@ public class NotificationController {
         String message = header + body;
 
         // 3. 카카오톡 전송
-        boolean isSent = kakaoMessageService.sendSelfMessage(user, message);
+        boolean isSent = messageSender.sendSelfMessage(user, message);
 
         // 4. 알림 내역 저장
         if (isSent) {
@@ -265,7 +271,7 @@ public class NotificationController {
                     .build());
             return ResponseEntity.ok("테스트 알림 발송 성공! (" + (isRaining ? "비" : "맑음") + ")\n내용: " + message);
         } else {
-            return ResponseEntity.status(500).body("카카오 메시지 발송 실패");
+            return ResponseEntity.status(500).body("알림 발송 실패");
         }
     }
 

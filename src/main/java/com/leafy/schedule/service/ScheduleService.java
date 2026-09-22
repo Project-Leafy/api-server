@@ -2,7 +2,9 @@ package com.leafy.schedule.service;
 
 import com.leafy.global.exception.EntityNotFoundException;
 import com.leafy.global.type.WaterFrequency;
-import com.leafy.notification.service.KakaoMessageService;
+import com.leafy.notification.domain.Notification;
+import com.leafy.notification.repository.NotificationRepository;
+import com.leafy.notification.service.MessageSender;
 import com.leafy.plant.domain.MyPlant;
 import com.leafy.plant.dto.PlantDataDto;
 import com.leafy.plant.repository.MyPlantRepository;
@@ -35,7 +37,8 @@ public class ScheduleService {
     private final ScheduleRepository scheduleRepository;
     private final MyPlantRepository myPlantRepository;
     private final UserRepository userRepository;
-    private final KakaoMessageService kakaoMessageService;
+    private final MessageSender messageSender;
+    private final NotificationRepository notificationRepository;
     private final PlantDataCache plantDataCache; // PlantDataCache 주입
 
     @Transactional(readOnly = true)
@@ -68,7 +71,16 @@ public class ScheduleService {
             String typeKorean = convertTypeToKorean(request.getScheduleType());
             String message = String.format("✅ [Leafy 일정 등록]\n\n'%s'의 '%s' 일정이 등록되었습니다!\n\n📅 날짜: %s",
                     myPlant.getNickname(), typeKorean, request.getNextDueDate());
-            kakaoMessageService.sendSelfMessage(currentUser, message);
+            if (messageSender.sendSelfMessage(currentUser, message)) {
+                // 알림함에 남긴다. (다른 알림들과 달리 이 알림은 이력을 저장하지 않고 있었다)
+                notificationRepository.save(Notification.builder()
+                        .user(currentUser)
+                        .myPlant(myPlant)
+                        .notificationType("SCHEDULE_CREATED")
+                        .message(message)
+                        .relatedSchedule(savedSchedule)
+                        .build());
+            }
         } catch (Exception e) {
             log.error("일정 등록 알림 발송 실패: {}", e.getMessage());
         }

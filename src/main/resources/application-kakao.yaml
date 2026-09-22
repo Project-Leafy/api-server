@@ -1,0 +1,22 @@
+# 카카오 로그인 · 카카오톡 알림 (기본 비활성화)
+#
+# 로컬 아이디·비밀번호 로그인으로 전환하면서 카카오 연동은 꺼두었다.
+# 다시 켜려면 활성 프로필에 kakao 를 추가한다.
+#   예) SPRING_PROFILES_ACTIVE=dev,kakao
+# 켜면 카카오 로그인이 구성되고, 알림도 앱 안 알림함 대신 카카오톡으로 발송된다.
+
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:
+            client-id: ${KAKAO_REST_API_KEY}
+            client-secret: ${KAKAO_CLIENT_SECRET}
+            redirect-uri: ${KAKAO_REDIRECT_URI:http://localhost:8080/login/oauth2/code/kakao}
+            authorization-grant-type: authorization_code
+            client-authentication-method: client_secret_post
+
+app:
+  kakao:
+    enabled: true

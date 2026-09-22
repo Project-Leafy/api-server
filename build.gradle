@@ -75,8 +75,10 @@ dependencies {
     // =================================================================
     // 4. 인프라 & 외부 연동 (Infra & External)
     // =================================================================
-    // 이미지 저장은 로컬 디스크를 사용한다 (S3/CloudFront 연동 제거).
-    // 이 앱은 공개 노출하지 않기로 했으므로 외부 자격증명을 두지 않는다.
+    // 이미지 저장소: 직접 띄운 MinIO (S3 호환 API)
+    // MinIO 전용 SDK 대신 S3 SDK 를 써서, 나중에 AWS S3 로 옮길 때 설정만 바꾸면 되게 한다.
+    implementation platform('software.amazon.awssdk:bom:2.31.1')
+    implementation 'software.amazon.awssdk:s3'
 
     // WebClient (비동기 HTTP 클라이언트)
     // - 추후 추천 알고리즘 서버나 공공데이터 포털 API 호출 시 사용
