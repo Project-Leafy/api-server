@@ -89,7 +89,7 @@ public class AuthService {
                 });
 
         log.info("[AUTH] 아이디 찾기 성공 userId={}", user.getUserId());
-        return new FindIdResponse(maskLoginId(user.getLoginId()));
+        return new FindIdResponse(user.getLoginId());
     }
 
     @Transactional
@@ -160,16 +160,5 @@ public class AuthService {
                 user.getEmail(), null,
                 List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())));
         return jwtTokenProvider.generateToken(authentication);
-    }
-
-    /** 아이디 일부를 가린다. 예: leafyuser -> le*****er */
-    static String maskLoginId(String loginId) {
-        if (loginId.length() <= 4) {
-            return loginId.substring(0, 2) + "*".repeat(loginId.length() - 2);
-        }
-        int visible = 2;
-        return loginId.substring(0, visible)
-                + "*".repeat(loginId.length() - visible * 2)
-                + loginId.substring(loginId.length() - visible);
     }
 }

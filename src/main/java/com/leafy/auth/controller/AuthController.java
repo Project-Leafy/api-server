@@ -39,7 +39,7 @@ public class AuthController {
         return authService.login(request);
     }
 
-    @Operation(summary = "아이디 찾기", description = "가입 시 등록한 이메일과 닉네임이 일치하면 일부를 가린 아이디를 돌려준다.")
+    @Operation(summary = "아이디 찾기", description = "가입 시 등록한 이메일과 닉네임이 일치하면 아이디를 돌려준다.")
     @PostMapping("/find-id")
     public FindIdResponse findId(@Valid @RequestBody FindIdRequest request) {
         return authService.findLoginId(request);
