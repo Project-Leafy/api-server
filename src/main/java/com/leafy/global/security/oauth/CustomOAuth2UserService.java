@@ -1,4 +1,5 @@
 package com.leafy.global.security.oauth;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import com.leafy.user.domain.Role;
 import com.leafy.user.domain.User;
@@ -13,6 +14,7 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 @ConditionalOnProperty(name = "app.kakao.enabled", havingValue = "true")
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
@@ -33,11 +35,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
         Map<String, Object> attributes = oAuth2User.getAttributes();
 
-        // 디버깅 로그: 카카오 응답 전체 출력
-        System.out.println("====== Kakao OAuth2 Attributes Start (for Debugging) ======");
-        System.out.println(attributes);
-        System.out.println("====== Kakao OAuth2 Attributes End ======");
-        // --- 여기까지 디버깅 로그 ---
+        // 카카오 응답은 이메일·닉네임 등 개인정보를 담고 있어 값은 남기지 않고 키만 남긴다.
+        log.debug("[OAuth] {} 사용자 속성 수신 keys={}", registrationId, attributes.keySet());
 
         String email = getEmail(registrationId, attributes);
 

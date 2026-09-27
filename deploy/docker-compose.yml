@@ -7,6 +7,10 @@
 # 밖으로 여는 포트는 프론트(80) 하나이고, Tailscale IP 에만 연결한다.
 # 백엔드(8080)·모니터링(9090)·MinIO(9000/9001)는 도커 내부망에서만 닿는다.
 
+# 프로젝트 이름을 고정한다. 없으면 폴더 이름(deploy)이 붙어 볼륨이 deploy_minio_data 가 된다.
+# 이 이름이 바뀌면 새 빈 볼륨이 만들어져 도감 이미지 217장을 다시 받는다.
+name: leafy
+
 services:
   minio:
     image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
@@ -51,6 +55,14 @@ services:
       # --- 인증 ---
       JWT_SECRET_KEY_DEV: ${JWT_SECRET_KEY}
 
+      # --- 로그 ---
+      # 백엔드 바로 앞 신뢰 프록시 = 프론트 nginx 의 고정 IP 하나.
+      # 이 주소에서 온 요청만 X-Forwarded-For 를 오른쪽 끝부터 읽어 원 소스 IP를 구한다.
+      # 네트워크 대역 전체를 넣지 말 것: 게이트웨이(10.203.0.1)가 포함되면 외부 요청 전부를 믿게 된다.
+      TRUSTED_PROXIES: 10.203.0.10/32
+      # 수집 계층(fluentd)의 line_format 을 json 으로 바꾸는 날 같이 켠다. 앱만 먼저 켜면 지금보다 더 안 읽힌다.
+      # LOG_FORMAT: com.leafy.global.logging.LeafyJsonFormatter
+
       # --- 저장소 (MinIO) ---
       STORAGE_ENDPOINT: http://minio:9000
       STORAGE_BUCKET: leafy
@@ -75,9 +87,27 @@ services:
     depends_on:
       - backend
       - minio
+    environment:
+      TZ: Asia/Seoul
+      # nginx 앞의 신뢰 프록시(set_real_ip_from). 지금은 nginx 앞에 아무것도 없으므로 비워 둔다.
+      # 신뢰 판단은 백엔드 한 곳(TRUSTED_PROXIES)에서만 한다. 판단 지점이 둘이면 한쪽만 틀려도 뚫린다.
+      # 나중에 AIOps 스택의 nginx 가 앞에 붙으면, 그 nginx 의 고정 IP 를 여기와 백엔드 양쪽에 추가한다.
+      TRUSTED_PROXIES: ""
+    networks:
+      default:
+        # 백엔드 TRUSTED_PROXIES 와 짝을 이루는 고정 IP
+        ipv4_address: 10.203.0.10
     ports:
       # Tailscale IP 에만 연결해 같은 tailnet 의 팀원만 접속하게 한다.
       - "${TAILSCALE_IP}:80:80"
+
+# 신뢰 프록시를 고정 IP 로 지정하기 위해 대역을 고정한다.
+# 172.16~31 대역은 Windows WSL2 가 임의로 쓰는 경우가 있어 피했다.
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 10.203.0.0/24
 
 volumes:
   minio_data:

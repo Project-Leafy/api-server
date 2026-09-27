@@ -35,6 +35,21 @@ public class AccessLogFilter extends OncePerRequestFilter {
     private static final org.slf4j.Logger ACCESS_LOG =
             org.slf4j.LoggerFactory.getLogger("ACCESS");
 
+    /** 요청 ID 헤더. nginx 가 $request_id 로 붙여 보내고, 응답에도 그대로 실어 돌려준다. */
+    static final String REQUEST_ID_HEADER = "X-Request-ID";
+
+    /** 받아들일 요청 ID 형식. 헤더 값은 클라이언트가 정할 수 있으므로 형식이 맞을 때만 쓴다. */
+    private static final java.util.regex.Pattern REQUEST_ID_FORMAT =
+            java.util.regex.Pattern.compile("^[A-Za-z0-9._-]{1,64}$");
+
+    private final TrustedProxies trustedProxies;
+
+    public AccessLogFilter(@org.springframework.beans.factory.annotation.Value("${app.logging.trusted-proxies:}")
+                           String trustedProxies) {
+        this.trustedProxies = TrustedProxies.parse(trustedProxies);
+        log.info("[Logging] 신뢰 프록시(TRUSTED_PROXIES): {}", this.trustedProxies);
+    }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
@@ -45,7 +60,15 @@ public class AccessLogFilter extends OncePerRequestFilter {
         // 요청 처리 중 발생하는 다른 로그(예외 로그 등)에도 같은 맥락이 붙도록 MDC에 심어둔다.
         MDC.put("http_method", request.getMethod());
         MDC.put("uri", request.getRequestURI());
-        MDC.put("source_ip", ClientIpResolver.resolve(request));
+        MDC.put("source_ip", ClientIpResolver.resolve(request, trustedProxies));
+
+        // nginx 로그와 1:1 로 잇는 키. 요청 처리 중 찍히는 모든 줄에 붙도록 맨 먼저 넣는다.
+        String requestId = resolveRequestId(request.getHeader(REQUEST_ID_HEADER));
+        MDC.put("request_id", requestId);
+        response.setHeader(REQUEST_ID_HEADER, requestId);
+
+        // 경로 디코딩본. 경로는 항상 있으므로 디코딩할 게 없으면 uri 와 같은 값이 된다.
+        MDC.put("uri_decoded", LogSafe.sanitizeQuery(PathDecoder.decode(request.getRequestURI())));
 
         try {
             filterChain.doFilter(request, response);
@@ -69,7 +92,9 @@ public class AccessLogFilter extends OncePerRequestFilter {
                 // JSON 전환 전에도 수집 계층이 값을 파싱할 수 있다.
                 ACCESS_LOG.info(
                         "method={} uri={} status={} duration_ms={} source_ip={} principal={} "
-                                + "user_agent=\"{}\" query=\"{}\" query_decoded=\"{}\"",
+                                + "user_agent=\"{}\" query=\"{}\" query_decoded=\"{}\" "
+                                // 새 키는 기존 키 뒤에만 붙인다. 앞에 넣으면 기존 파싱이 깨진다.
+                                + "request_id={} uri_decoded=\"{}\"",
                         request.getMethod(),
                         MDC.get("uri"),
                         status,
@@ -78,11 +103,21 @@ public class AccessLogFilter extends OncePerRequestFilter {
                         MDC.get("principal"),
                         MDC.get("user_agent"),
                         MDC.get("query"),
-                        MDC.get("query_decoded"));
+                        MDC.get("query_decoded"),
+                        MDC.get("request_id"),
+                        MDC.get("uri_decoded"));
             } finally {
                 MDC.clear();
             }
         }
+    }
+
+    /** 들어온 요청 ID 가 형식에 맞으면 쓰고, 없거나 형식이 틀리면 새로 만든다. */
+    static String resolveRequestId(String header) {
+        if (header != null && REQUEST_ID_FORMAT.matcher(header).matches()) {
+            return header;
+        }
+        return java.util.UUID.randomUUID().toString().replace("-", "");
     }
 
     /**
